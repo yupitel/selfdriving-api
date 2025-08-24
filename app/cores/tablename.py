@@ -1,0 +1,10 @@
+# TABLE NAME
+MEASUREMENT = "measurement"
+DATASTREAM = "datastream"
+SCENE = "scene"
+DRIVER = "driver"
+VEHICLE = "vehicle"
+TAG = "tag"
+PIPELINE = "pipeline"
+PIPELINE_DATA = "pipelinedata"
+PIPELINE_STATE = "pipelinestate"

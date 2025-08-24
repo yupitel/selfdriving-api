@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  postgres-test:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: selfdriving_test
+    ports:
+      - "5433:5432"  # Different port to avoid conflicts
+    volumes:
+      - ./init-db:/docker-entrypoint-initdb.d:ro
+    networks:
+      - selfdriving-test-network
+    # No persistent volumes for test environment
+
+  api-test:
+    build: .
+    ports:
+      - "8001:8000"  # Different port to avoid conflicts
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres-test:5432/selfdriving_test
+      DB_MODE: test  # test mode - recreate tables each time
+      BULK_INSERT_MAX_NUM: 100  # Lower limit for testing
+    depends_on:
+      - postgres-test
+    networks:
+      - selfdriving-test-network
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+networks:
+  selfdriving-test-network:
+    driver: bridge

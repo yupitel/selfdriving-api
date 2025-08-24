@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  api-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      # Use external database in production
+      DATABASE_URL: ${DATABASE_URL}  # Set via environment or .env.prod
+      DB_MODE: production  # production mode - no auto-creation
+      BULK_INSERT_MAX_NUM: ${BULK_INSERT_MAX_NUM:-1000}
+      AWS_REGION: ${AWS_REGION:-us-west-2}
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

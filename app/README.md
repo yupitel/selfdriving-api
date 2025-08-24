@@ -4,7 +4,7 @@ API for self driving portal
 
 ## Architecture
 
-### SQL
+### Database
 
 PostgreSQL
 

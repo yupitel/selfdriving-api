@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from app.cores.table_name import MEASUREMENT
+from app.cores.tablename import MEASUREMENT
 from app.models.base import BaseSQLModel
 
 from sqlmodel import Field

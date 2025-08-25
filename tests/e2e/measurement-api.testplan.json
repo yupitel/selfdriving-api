@@ -1,0 +1,345 @@
+{
+  "title": "Measurement API E2E Tests",
+  "description": "End-to-end tests for the measurement data collection API",
+  "baseUrl": "http://localhost:8000",
+  "headers": {
+    "content-type": "application/json"
+  },
+  "preprocess": [
+    {
+      "type": "api",
+      "description": "Check API health before testing",
+      "api": "/api/v1/health",
+      "method": "GET"
+    }
+  ],
+  "tests": [
+    {
+      "name": "Measurement CRUD Operations",
+      "description": "Test Create, Read, Update, and Delete operations for measurements",
+      "assertions": [
+        {
+          "description": "Create a new measurement",
+          "api": "/api/v1/measurements/",
+          "method": "POST",
+          "input": {
+            "datastream_id": "DS001",
+            "timestamp": "2025-01-25T10:00:00Z",
+            "sensor_type": "lidar",
+            "data": {
+              "point_cloud_size": 65536,
+              "intensity_range": [0, 255],
+              "scan_pattern": "rotating"
+            },
+            "quality_score": 0.95,
+            "processing_status": "pending"
+          },
+          "expected": {
+            "status": 201
+          },
+          "postprocess": [
+            {
+              "description": "Capture created measurement ID",
+              "type": "capture",
+              "from": "id",
+              "to": "global.measurementId"
+            }
+          ]
+        },
+        {
+          "description": "Get the created measurement by ID",
+          "api": "/api/v1/measurements/${global.measurementId}",
+          "method": "GET",
+          "expected": {
+            "status": 200,
+            "result": {
+              "datastream_id": "DS001",
+              "sensor_type": "lidar",
+              "quality_score": 0.95,
+              "processing_status": "pending"
+            }
+          }
+        },
+        {
+          "description": "Update the measurement",
+          "api": "/api/v1/measurements/${global.measurementId}",
+          "method": "PUT",
+          "input": {
+            "processing_status": "completed",
+            "quality_score": 0.98,
+            "data": {
+              "point_cloud_size": 65536,
+              "intensity_range": [0, 255],
+              "scan_pattern": "rotating",
+              "processed": true
+            }
+          },
+          "expected": {
+            "status": 200,
+            "result": {
+              "processing_status": "completed",
+              "quality_score": 0.98
+            }
+          }
+        },
+        {
+          "description": "List all measurements with filter",
+          "api": "/api/v1/measurements/",
+          "method": "GET",
+          "input": {
+            "sensor_type": "lidar",
+            "limit": 10
+          },
+          "expected": {
+            "status": 200
+          }
+        },
+        {
+          "description": "Delete the measurement",
+          "api": "/api/v1/measurements/${global.measurementId}",
+          "method": "DELETE",
+          "expected": {
+            "status": 204
+          }
+        },
+        {
+          "description": "Verify measurement was deleted",
+          "api": "/api/v1/measurements/${global.measurementId}",
+          "method": "GET",
+          "expected": {
+            "status": 404
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bulk Operations",
+      "description": "Test bulk create operations for measurements",
+      "assertions": [
+        {
+          "description": "Bulk create measurements",
+          "api": "/api/v1/measurements/bulk",
+          "method": "POST",
+          "input": {
+            "measurements": [
+              {
+                "datastream_id": "DS002",
+                "timestamp": "2025-01-25T11:00:00Z",
+                "sensor_type": "camera",
+                "data": {
+                  "resolution": "1920x1080",
+                  "fps": 30,
+                  "format": "H264"
+                },
+                "quality_score": 0.92,
+                "processing_status": "pending"
+              },
+              {
+                "datastream_id": "DS002",
+                "timestamp": "2025-01-25T11:00:01Z",
+                "sensor_type": "camera",
+                "data": {
+                  "resolution": "1920x1080",
+                  "fps": 30,
+                  "format": "H264"
+                },
+                "quality_score": 0.94,
+                "processing_status": "pending"
+              },
+              {
+                "datastream_id": "DS003",
+                "timestamp": "2025-01-25T11:00:00Z",
+                "sensor_type": "radar",
+                "data": {
+                  "frequency": "77GHz",
+                  "range": 200,
+                  "targets_detected": 5
+                },
+                "quality_score": 0.89,
+                "processing_status": "pending"
+              }
+            ]
+          },
+          "expected": {
+            "status": 201,
+            "result": {
+              "created": 3,
+              "failed": 0
+            }
+          },
+          "postprocess": [
+            {
+              "description": "Capture bulk created IDs",
+              "type": "capture",
+              "from": "ids",
+              "to": "global.bulkIds"
+            }
+          ]
+        },
+        {
+          "description": "Query measurements by datastream",
+          "api": "/api/v1/measurements/",
+          "method": "GET",
+          "input": {
+            "datastream_id": "DS002",
+            "limit": 10
+          },
+          "expected": {
+            "status": 200
+          }
+        }
+      ]
+    },
+    {
+      "name": "Error Handling",
+      "description": "Test API error handling and validation",
+      "assertions": [
+        {
+          "description": "Create measurement with invalid data",
+          "api": "/api/v1/measurements/",
+          "method": "POST",
+          "input": {
+            "datastream_id": "",
+            "timestamp": "invalid-date",
+            "sensor_type": "unknown"
+          },
+          "expected": {
+            "status": 422
+          }
+        },
+        {
+          "description": "Get non-existent measurement",
+          "api": "/api/v1/measurements/99999",
+          "method": "GET",
+          "expected": {
+            "status": 404
+          }
+        },
+        {
+          "description": "Update non-existent measurement",
+          "api": "/api/v1/measurements/99999",
+          "method": "PUT",
+          "input": {
+            "processing_status": "completed"
+          },
+          "expected": {
+            "status": 404
+          }
+        },
+        {
+          "description": "Delete non-existent measurement",
+          "api": "/api/v1/measurements/99999",
+          "method": "DELETE",
+          "expected": {
+            "status": 404
+          }
+        },
+        {
+          "description": "Bulk create with too many items",
+          "api": "/api/v1/measurements/bulk",
+          "method": "POST",
+          "input": {
+            "measurements": []
+          },
+          "expected": {
+            "status": 400
+          }
+        }
+      ]
+    },
+    {
+      "name": "Performance Testing",
+      "description": "Test API performance with parallel requests",
+      "assertions": [
+        {
+          "description": "Parallel GET requests",
+          "api": "/api/v1/measurements/",
+          "method": "GET",
+          "input": {
+            "limit": 10
+          },
+          "parallel": 50,
+          "expected": {
+            "status": 200
+          }
+        },
+        {
+          "description": "Parallel POST requests",
+          "api": "/api/v1/measurements/",
+          "method": "POST",
+          "input": {
+            "datastream_id": "DS_PERF",
+            "timestamp": "2025-01-25T12:00:00Z",
+            "sensor_type": "imu",
+            "data": {
+              "acceleration": [0.1, 0.2, 9.8],
+              "gyroscope": [0.01, 0.02, 0.03],
+              "magnetometer": [25.0, -5.0, 40.0]
+            },
+            "quality_score": 0.91,
+            "processing_status": "pending"
+          },
+          "parallel": 20,
+          "expected": {
+            "status": 201
+          }
+        }
+      ]
+    },
+    {
+      "name": "Filtering and Pagination",
+      "description": "Test advanced filtering and pagination features",
+      "assertions": [
+        {
+          "description": "Filter by date range",
+          "api": "/api/v1/measurements/",
+          "method": "GET",
+          "input": {
+            "start_time": "2025-01-25T10:00:00Z",
+            "end_time": "2025-01-25T12:00:00Z",
+            "limit": 100
+          },
+          "expected": {
+            "status": 200
+          }
+        },
+        {
+          "description": "Filter by processing status",
+          "api": "/api/v1/measurements/",
+          "method": "GET",
+          "input": {
+            "processing_status": "pending",
+            "limit": 50
+          },
+          "expected": {
+            "status": 200
+          }
+        },
+        {
+          "description": "Filter by quality score threshold",
+          "api": "/api/v1/measurements/",
+          "method": "GET",
+          "input": {
+            "min_quality_score": 0.9,
+            "limit": 20
+          },
+          "expected": {
+            "status": 200
+          }
+        },
+        {
+          "description": "Test pagination with offset",
+          "api": "/api/v1/measurements/",
+          "method": "GET",
+          "input": {
+            "offset": 10,
+            "limit": 10
+          },
+          "expected": {
+            "status": 200
+          }
+        }
+      ]
+    }
+  ]
+}

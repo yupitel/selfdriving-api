@@ -1,0 +1,20 @@
+{
+  "name": "selfdriving-api-e2e-tests",
+  "version": "1.0.0",
+  "description": "E2E tests for Self-driving Data Collection API",
+  "scripts": {
+    "test:e2e": "playwright test tests/e2e/json-runner.spec.ts",
+    "test:e2e:headed": "playwright test tests/e2e/json-runner.spec.ts --headed",
+    "test:e2e:debug": "playwright test tests/e2e/json-runner.spec.ts --debug",
+    "test:e2e:ui": "playwright test tests/e2e/json-runner.spec.ts --ui",
+    "playwright:install": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

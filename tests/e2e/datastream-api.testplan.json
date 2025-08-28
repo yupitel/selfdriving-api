@@ -1,0 +1,532 @@
+{
+  "title": "DataStream API E2E Tests",
+  "description": "End-to-end tests for the datastream management API",
+  "baseUrl": "http://localhost:8000",
+  "headers": {
+    "content-type": "application/json"
+  },
+  "preprocess": [
+    {
+      "type": "api",
+      "description": "Check API health before testing",
+      "api": "/health",
+      "method": "GET"
+    },
+    {
+      "type": "api",
+      "description": "Create test measurement for datastream tests",
+      "api": "/api/v1/measurements/",
+      "method": "POST",
+      "input": {
+        "datastream_id": "DS_TEST_001",
+        "timestamp": "2025-01-26T10:00:00Z",
+        "sensor_type": "lidar",
+        "data": {
+          "test": true
+        },
+        "quality_score": 0.95,
+        "processing_status": "pending"
+      }
+    }
+  ],
+  "tests": [
+    {
+      "name": "DataStream CRUD Operations",
+      "description": "Test Create, Read, Update, and Delete operations for datastreams",
+      "assertions": [
+        {
+          "description": "Capture measurement ID from preprocess",
+          "api": "/api/v1/measurements/",
+          "method": "GET",
+          "input": {
+            "datastream_id": "DS_TEST_001",
+            "limit": 1
+          },
+          "expected": {
+            "status": 200
+          },
+          "postprocess": [
+            {
+              "description": "Capture measurement ID for datastream creation",
+              "type": "capture",
+              "from": "[0].id",
+              "to": "global.testMeasurementId"
+            }
+          ]
+        },
+        {
+          "description": "Create a new datastream",
+          "api": "/api/v1/datastreams/",
+          "method": "POST",
+          "input": {
+            "type": 1,
+            "measurement_id": "${global.testMeasurementId}",
+            "data_path": "/data/sensors/lidar/scan_001.pcd",
+            "src_path": "/raw/lidar/2025-01-26/scan_001.raw"
+          },
+          "expected": {
+            "status": 201
+          },
+          "postprocess": [
+            {
+              "description": "Capture created datastream ID",
+              "type": "capture",
+              "from": "id",
+              "to": "global.datastreamId"
+            }
+          ]
+        },
+        {
+          "description": "Get the created datastream by ID",
+          "api": "/api/v1/datastreams/${global.datastreamId}",
+          "method": "GET",
+          "expected": {
+            "status": 200,
+            "result": {
+              "type": 1,
+              "measurement_id": "${global.testMeasurementId}",
+              "data_path": "/data/sensors/lidar/scan_001.pcd",
+              "src_path": "/raw/lidar/2025-01-26/scan_001.raw"
+            }
+          }
+        },
+        {
+          "description": "Update the datastream",
+          "api": "/api/v1/datastreams/${global.datastreamId}",
+          "method": "PUT",
+          "input": {
+            "type": 2,
+            "data_path": "/data/sensors/radar/scan_001.bin",
+            "src_path": "/raw/radar/2025-01-26/scan_001.raw"
+          },
+          "expected": {
+            "status": 200,
+            "result": {
+              "type": 2,
+              "data_path": "/data/sensors/radar/scan_001.bin",
+              "src_path": "/raw/radar/2025-01-26/scan_001.raw"
+            }
+          }
+        },
+        {
+          "description": "List all datastreams with filter",
+          "api": "/api/v1/datastreams/",
+          "method": "GET",
+          "input": {
+            "type": 2,
+            "limit": 10
+          },
+          "expected": {
+            "status": 200
+          }
+        },
+        {
+          "description": "Get datastreams by measurement",
+          "api": "/api/v1/datastreams/measurement/${global.testMeasurementId}",
+          "method": "GET",
+          "expected": {
+            "status": 200
+          }
+        },
+        {
+          "description": "Delete the datastream",
+          "api": "/api/v1/datastreams/${global.datastreamId}",
+          "method": "DELETE",
+          "expected": {
+            "status": 204
+          }
+        },
+        {
+          "description": "Verify datastream was deleted",
+          "api": "/api/v1/datastreams/${global.datastreamId}",
+          "method": "GET",
+          "expected": {
+            "status": 404
+          }
+        }
+      ]
+    },
+    {
+      "name": "DataStream Types Testing",
+      "description": "Test different datastream types",
+      "assertions": [
+        {
+          "description": "Create CAMERA datastream (type=0)",
+          "api": "/api/v1/datastreams/",
+          "method": "POST",
+          "input": {
+            "type": 0,
+            "measurement_id": "${global.testMeasurementId}",
+            "data_path": "/data/camera/frame_001.jpg"
+          },
+          "expected": {
+            "status": 201
+          }
+        },
+        {
+          "description": "Create LIDAR datastream (type=1)",
+          "api": "/api/v1/datastreams/",
+          "method": "POST",
+          "input": {
+            "type": 1,
+            "measurement_id": "${global.testMeasurementId}",
+            "data_path": "/data/lidar/scan_001.pcd"
+          },
+          "expected": {
+            "status": 201
+          }
+        },
+        {
+          "description": "Create RADAR datastream (type=2)",
+          "api": "/api/v1/datastreams/",
+          "method": "POST",
+          "input": {
+            "type": 2,
+            "measurement_id": "${global.testMeasurementId}",
+            "data_path": "/data/radar/scan_001.bin"
+          },
+          "expected": {
+            "status": 201
+          }
+        },
+        {
+          "description": "Create IMU datastream (type=3)",
+          "api": "/api/v1/datastreams/",
+          "method": "POST",
+          "input": {
+            "type": 3,
+            "measurement_id": "${global.testMeasurementId}",
+            "data_path": "/data/imu/data_001.csv"
+          },
+          "expected": {
+            "status": 201
+          }
+        },
+        {
+          "description": "Create GPS datastream (type=4)",
+          "api": "/api/v1/datastreams/",
+          "method": "POST",
+          "input": {
+            "type": 4,
+            "measurement_id": "${global.testMeasurementId}",
+            "data_path": "/data/gps/location_001.json"
+          },
+          "expected": {
+            "status": 201
+          }
+        },
+        {
+          "description": "Get statistics",
+          "api": "/api/v1/datastreams/statistics",
+          "method": "GET",
+          "expected": {
+            "status": 200,
+            "result": {
+              "by_type": {
+                "CAMERA": 1,
+                "LIDAR": 1,
+                "RADAR": 1,
+                "IMU": 1,
+                "GPS": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bulk Operations",
+      "description": "Test bulk create operations for datastreams",
+      "assertions": [
+        {
+          "description": "Bulk create datastreams",
+          "api": "/api/v1/datastreams/bulk",
+          "method": "POST",
+          "input": {
+            "datastreams": [
+              {
+                "type": 0,
+                "measurement_id": "${global.testMeasurementId}",
+                "data_path": "/bulk/camera/frame_001.jpg",
+                "src_path": "/raw/camera/frame_001.raw"
+              },
+              {
+                "type": 0,
+                "measurement_id": "${global.testMeasurementId}",
+                "data_path": "/bulk/camera/frame_002.jpg",
+                "src_path": "/raw/camera/frame_002.raw"
+              },
+              {
+                "type": 1,
+                "measurement_id": "${global.testMeasurementId}",
+                "data_path": "/bulk/lidar/scan_001.pcd",
+                "src_path": "/raw/lidar/scan_001.bin"
+              },
+              {
+                "type": 2,
+                "measurement_id": "${global.testMeasurementId}",
+                "data_path": "/bulk/radar/data_001.bin",
+                "src_path": "/raw/radar/data_001.raw"
+              },
+              {
+                "type": 3,
+                "measurement_id": "${global.testMeasurementId}",
+                "data_path": "/bulk/imu/data_001.csv",
+                "src_path": "/raw/imu/data_001.bin"
+              }
+            ]
+          },
+          "expected": {
+            "status": 201,
+            "result": {
+              "created": 5,
+              "failed": 0
+            }
+          },
+          "postprocess": [
+            {
+              "description": "Capture bulk created IDs",
+              "type": "capture",
+              "from": "ids",
+              "to": "global.bulkDatastreamIds"
+            }
+          ]
+        },
+        {
+          "description": "Query bulk created datastreams",
+          "api": "/api/v1/datastreams/",
+          "method": "GET",
+          "input": {
+            "data_path": "/bulk/",
+            "limit": 10
+          },
+          "expected": {
+            "status": 200
+          }
+        }
+      ]
+    },
+    {
+      "name": "Error Handling",
+      "description": "Test API error handling and validation",
+      "assertions": [
+        {
+          "description": "Create datastream with invalid type",
+          "api": "/api/v1/datastreams/",
+          "method": "POST",
+          "input": {
+            "type": -1,
+            "measurement_id": "${global.testMeasurementId}"
+          },
+          "expected": {
+            "status": 422
+          }
+        },
+        {
+          "description": "Create datastream with type exceeding limit",
+          "api": "/api/v1/datastreams/",
+          "method": "POST",
+          "input": {
+            "type": 40000,
+            "measurement_id": "${global.testMeasurementId}"
+          },
+          "expected": {
+            "status": 422
+          }
+        },
+        {
+          "description": "Create datastream with non-existent measurement",
+          "api": "/api/v1/datastreams/",
+          "method": "POST",
+          "input": {
+            "type": 1,
+            "measurement_id": "00000000-0000-0000-0000-000000000000",
+            "data_path": "/test/data.pcd"
+          },
+          "expected": {
+            "status": 400
+          }
+        },
+        {
+          "description": "Get non-existent datastream",
+          "api": "/api/v1/datastreams/00000000-0000-0000-0000-000000000000",
+          "method": "GET",
+          "expected": {
+            "status": 404
+          }
+        },
+        {
+          "description": "Update non-existent datastream",
+          "api": "/api/v1/datastreams/00000000-0000-0000-0000-000000000000",
+          "method": "PUT",
+          "input": {
+            "type": 1
+          },
+          "expected": {
+            "status": 404
+          }
+        },
+        {
+          "description": "Delete non-existent datastream",
+          "api": "/api/v1/datastreams/00000000-0000-0000-0000-000000000000",
+          "method": "DELETE",
+          "expected": {
+            "status": 404
+          }
+        },
+        {
+          "description": "Bulk create with empty list",
+          "api": "/api/v1/datastreams/bulk",
+          "method": "POST",
+          "input": {
+            "datastreams": []
+          },
+          "expected": {
+            "status": 422
+          }
+        },
+        {
+          "description": "Bulk create with too many items",
+          "api": "/api/v1/datastreams/bulk",
+          "method": "POST",
+          "input": {
+            "datastreams": []
+          },
+          "expected": {
+            "status": 422
+          }
+        }
+      ]
+    },
+    {
+      "name": "Filtering and Pagination",
+      "description": "Test advanced filtering and pagination features",
+      "assertions": [
+        {
+          "description": "Filter by datastream type",
+          "api": "/api/v1/datastreams/",
+          "method": "GET",
+          "input": {
+            "type": 0,
+            "limit": 50
+          },
+          "expected": {
+            "status": 200
+          }
+        },
+        {
+          "description": "Filter by measurement ID",
+          "api": "/api/v1/datastreams/",
+          "method": "GET",
+          "input": {
+            "measurement_id": "${global.testMeasurementId}",
+            "limit": 50
+          },
+          "expected": {
+            "status": 200
+          }
+        },
+        {
+          "description": "Filter by data path (partial match)",
+          "api": "/api/v1/datastreams/",
+          "method": "GET",
+          "input": {
+            "data_path": "camera",
+            "limit": 20
+          },
+          "expected": {
+            "status": 200
+          }
+        },
+        {
+          "description": "Filter by source path (partial match)",
+          "api": "/api/v1/datastreams/",
+          "method": "GET",
+          "input": {
+            "src_path": "raw",
+            "limit": 20
+          },
+          "expected": {
+            "status": 200
+          }
+        },
+        {
+          "description": "Test pagination with offset",
+          "api": "/api/v1/datastreams/",
+          "method": "GET",
+          "input": {
+            "offset": 5,
+            "limit": 10
+          },
+          "expected": {
+            "status": 200
+          }
+        },
+        {
+          "description": "Test maximum limit",
+          "api": "/api/v1/datastreams/",
+          "method": "GET",
+          "input": {
+            "limit": 1000
+          },
+          "expected": {
+            "status": 200
+          }
+        },
+        {
+          "description": "Test exceeding maximum limit",
+          "api": "/api/v1/datastreams/",
+          "method": "GET",
+          "input": {
+            "limit": 1001
+          },
+          "expected": {
+            "status": 422
+          }
+        }
+      ]
+    },
+    {
+      "name": "Performance Testing",
+      "description": "Test API performance with parallel requests",
+      "assertions": [
+        {
+          "description": "Parallel GET requests",
+          "api": "/api/v1/datastreams/",
+          "method": "GET",
+          "input": {
+            "limit": 10
+          },
+          "parallel": 30,
+          "expected": {
+            "status": 200
+          }
+        },
+        {
+          "description": "Parallel POST requests",
+          "api": "/api/v1/datastreams/",
+          "method": "POST",
+          "input": {
+            "type": 5,
+            "measurement_id": "${global.testMeasurementId}",
+            "data_path": "/perf/can/data.log",
+            "src_path": "/raw/can/data.bin"
+          },
+          "parallel": 10,
+          "expected": {
+            "status": 201
+          }
+        },
+        {
+          "description": "Parallel statistics requests",
+          "api": "/api/v1/datastreams/statistics",
+          "method": "GET",
+          "parallel": 20,
+          "expected": {
+            "status": 200
+          }
+        }
+      ]
+    }
+  ]
+}

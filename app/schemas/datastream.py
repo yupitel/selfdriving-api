@@ -8,6 +8,7 @@ class DataStreamBase(BaseModel):
     """Base schema for DataStream"""
     type: int = Field(..., ge=0, le=32767, description="DataStream type (0-32767)")
     measurement_id: UUID = Field(..., description="Associated measurement ID")
+    name: Optional[str] = Field(None, max_length=255, description="Name of the datastream")
     data_path: Optional[str] = Field(None, max_length=500, description="Path to the data file")
     src_path: Optional[str] = Field(None, max_length=500, description="Source path of the data")
 
@@ -21,6 +22,7 @@ class DataStreamUpdate(BaseModel):
     """Schema for updating a DataStream"""
     type: Optional[int] = Field(None, ge=0, le=32767, description="DataStream type")
     measurement_id: Optional[UUID] = Field(None, description="Associated measurement ID")
+    name: Optional[str] = Field(None, max_length=255, description="Name of the datastream")
     data_path: Optional[str] = Field(None, max_length=500, description="Path to the data file")
     src_path: Optional[str] = Field(None, max_length=500, description="Source path of the data")
 
@@ -38,6 +40,7 @@ class DataStreamFilter(BaseModel):
     """Schema for filtering DataStreams"""
     type: Optional[int] = Field(None, ge=0, le=32767, description="Filter by type")
     measurement_id: Optional[UUID] = Field(None, description="Filter by measurement ID")
+    name: Optional[str] = Field(None, description="Filter by name (partial match)")
     data_path: Optional[str] = Field(None, description="Filter by data path (partial match)")
     src_path: Optional[str] = Field(None, description="Filter by source path (partial match)")
     start_time: Optional[datetime] = Field(None, description="Filter by creation time (after)")

@@ -10,6 +10,7 @@ class MeasurementBase(BaseModel):
     area_id: UUID
     local_time: datetime
     measured_at: int
+    name: Optional[str] = None
     data_path: Optional[str] = None
 
 
@@ -24,6 +25,7 @@ class MeasurementUpdate(BaseModel):
     area_id: Optional[UUID] = None
     local_time: Optional[datetime] = None
     measured_at: Optional[int] = None
+    name: Optional[str] = None
     data_path: Optional[str] = None
 
 

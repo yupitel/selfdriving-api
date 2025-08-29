@@ -14,4 +14,5 @@ class MeasurementModel(BaseSQLModel, table=True):
     area_id: UUID = Field(..., nullable=False)
     local_time: datetime = Field(..., nullable=False)
     measured_at: int = Field(..., nullable=False)
+    name: Optional[str] = Field(default=None, nullable=True)
     data_path: Optional[str] = Field(default=None, nullable=True)

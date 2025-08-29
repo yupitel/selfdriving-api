@@ -63,6 +63,7 @@ async def create_datastream(
 async def list_datastreams(
     type: Optional[int] = Query(None, ge=0, le=32767, description="Filter by type"),
     measurement_id: Optional[UUID] = Query(None, description="Filter by measurement ID"),
+    name: Optional[str] = Query(None, description="Filter by name (partial match)"),
     data_path: Optional[str] = Query(None, description="Filter by data path (partial match)"),
     src_path: Optional[str] = Query(None, description="Filter by source path (partial match)"),
     start_time: Optional[str] = Query(None, description="Filter by creation time (after)"),
@@ -77,6 +78,7 @@ async def list_datastreams(
     Query parameters:
     - **type**: Filter by datastream type
     - **measurement_id**: Filter by measurement ID
+    - **name**: Filter by name (partial match)
     - **data_path**: Filter by data path (partial match)
     - **src_path**: Filter by source path (partial match)
     - **start_time**: Filter by creation time (after)
@@ -89,6 +91,7 @@ async def list_datastreams(
         filters = DataStreamFilter(
             type=type,
             measurement_id=measurement_id,
+            name=name,
             data_path=data_path,
             src_path=src_path,
             start_time=start_time,

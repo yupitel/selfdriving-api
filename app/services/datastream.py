@@ -88,6 +88,9 @@ class DataStreamService:
             if filters.measurement_id:
                 conditions.append(DataStreamModel.measurement_id == filters.measurement_id)
             
+            if filters.name:
+                conditions.append(DataStreamModel.name.contains(filters.name))
+            
             if filters.data_path:
                 conditions.append(DataStreamModel.data_path.contains(filters.data_path))
             

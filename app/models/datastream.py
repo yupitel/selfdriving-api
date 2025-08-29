@@ -13,5 +13,6 @@ class DataStreamModel(BaseSQLModel, table=True):
     # When using sa_column, set nullability on the SQLAlchemy Column, not Field()
     type: int = Field(sa_column=Column(SmallInteger, nullable=False))
     measurement_id: UUID = Field(..., nullable=False)
+    name: Optional[str] = Field(default=None, nullable=True)
     data_path: Optional[str] = Field(default=None, nullable=True)
     src_path: Optional[str] = Field(default=None, nullable=True)

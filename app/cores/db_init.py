@@ -5,6 +5,8 @@ Handles schema and table creation based on environment
 
 import logging
 import os
+import time
+import psycopg2
 from sqlalchemy import text, inspect
 from sqlmodel import SQLModel
 
@@ -14,8 +16,44 @@ from app.cores.database import engine
 # Import all models to register them with SQLModel
 from app.models.measurement import MeasurementModel
 from app.models.datastream import DataStreamModel
+from app.models.vehicle import VehicleModel
+from app.models.pipeline import PipelineModel
 
 logger = logging.getLogger(__name__)
+
+
+def wait_for_database(max_retries: int = 30, retry_interval: int = 2):
+    """Wait for database to be ready"""
+    logger.info("Waiting for database to be ready...")
+    
+    for attempt in range(max_retries):
+        try:
+            # Try to connect directly with psycopg2 first
+            conn_params = {
+                'host': 'postgres',
+                'port': 5432,
+                'user': 'postgres',
+                'password': 'postgres',
+                'database': 'selfdriving',
+                'connect_timeout': 5
+            }
+            
+            with psycopg2.connect(**conn_params) as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute('SELECT 1')
+                    logger.info("Database is ready!")
+                    return True
+                    
+        except psycopg2.OperationalError as e:
+            logger.info(f"Database not ready (attempt {attempt + 1}/{max_retries}): {e}")
+            if attempt < max_retries - 1:
+                time.sleep(retry_interval)
+        except Exception as e:
+            logger.error(f"Unexpected error while waiting for database: {e}")
+            if attempt < max_retries - 1:
+                time.sleep(retry_interval)
+    
+    raise RuntimeError(f"Database failed to become ready after {max_retries} attempts")
 
 
 def create_schema_if_not_exists():
@@ -68,7 +106,9 @@ def check_tables_exist():
     
     expected_tables = [
         "measurement",
-        "datastream"
+        "datastream",
+        "vehicle",
+        "pipeline"
     ]
     
     missing_tables = [table for table in expected_tables if table not in existing_tables]
@@ -91,6 +131,9 @@ def initialize_database(mode: str = "test"):
               "production" - Only check if schema and tables exist
     """
     logger.info(f"Initializing database in {mode} mode")
+    
+    # First, wait for database to be ready
+    wait_for_database()
     
     if mode in ["test", "development"]:
         # Create schema if not exists

@@ -14,6 +14,12 @@ services:
       - ./init-db:/docker-entrypoint-initdb.d:ro  # SQL初期化スクリプト
     networks:
       - selfdriving-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d selfdriving"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   api:
     build: .
@@ -24,12 +30,14 @@ services:
       DB_MODE: development  # development mode for auto-creation
       BULK_INSERT_MAX_NUM: 1000
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - selfdriving-network
     volumes:
       - ./app:/app/app
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    restart: unless-stopped
 
 volumes:
   postgres_data:

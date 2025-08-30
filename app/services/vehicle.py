@@ -86,6 +86,12 @@ class VehicleService:
             if filters.data_path:
                 conditions.append(VehicleModel.data_path.contains(filters.data_path))
             
+            if filters.type is not None:
+                conditions.append(VehicleModel.type == filters.type)
+            
+            if filters.status is not None:
+                conditions.append(VehicleModel.status == filters.status)
+            
             if filters.start_time:
                 conditions.append(VehicleModel.created_at >= filters.start_time)
             
@@ -261,12 +267,24 @@ class VehicleService:
                 if vehicle.country:
                     country_counts[vehicle.country] = country_counts.get(vehicle.country, 0) + 1
             
+            # Count by type
+            type_counts = {}
+            for vehicle in all_vehicles:
+                type_counts[vehicle.type] = type_counts.get(vehicle.type, 0) + 1
+            
+            # Count by status
+            status_counts = {}
+            for vehicle in all_vehicles:
+                status_counts[vehicle.status] = status_counts.get(vehicle.status, 0) + 1
+            
             # Count vehicles with data_path
             with_data_path = len([v for v in all_vehicles if v.data_path is not None])
             
             return {
                 "total": len(all_vehicles),
                 "by_country": country_counts,
+                "by_type": type_counts,
+                "by_status": status_counts,
                 "with_data_path": with_data_path
             }
             

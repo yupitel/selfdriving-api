@@ -14,35 +14,35 @@ SET search_path TO selfdriving;
 -- DELETE FROM vehicle WHERE name LIKE 'TEST-%';
 
 -- Insert test vehicles from different countries
-INSERT INTO vehicle (id, created_at, updated_at, country, name, data_path)
+INSERT INTO vehicle (id, created_at, updated_at, country, name, data_path, type, status)
 VALUES 
     -- Japanese vehicles
     ('11111111-1111-1111-1111-111111111111', EXTRACT(EPOCH FROM NOW() - INTERVAL '30 days')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT, 
-     'JP', 'TEST-JP-001', '/data/vehicles/jp/001'),
+     'JP', 'TEST-JP-001', '/data/vehicles/jp/001', 0, 1),  -- SEDAN, ACTIVE
     ('11111111-1111-1111-1111-111111111112', EXTRACT(EPOCH FROM NOW() - INTERVAL '25 days')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT, 
-     'JP', 'TEST-JP-002', '/data/vehicles/jp/002'),
+     'JP', 'TEST-JP-002', '/data/vehicles/jp/002', 1, 1),  -- SUV, ACTIVE
     ('11111111-1111-1111-1111-111111111113', EXTRACT(EPOCH FROM NOW() - INTERVAL '20 days')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT, 
-     'JP', 'TEST-JP-003', '/data/vehicles/jp/003'),
+     'JP', 'TEST-JP-003', '/data/vehicles/jp/003', 5, 2),  -- COMPACT, MAINTENANCE
     
     -- US vehicles
     ('11111111-1111-1111-1111-111111111114', EXTRACT(EPOCH FROM NOW() - INTERVAL '28 days')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT, 
-     'US', 'TEST-US-001', '/data/vehicles/us/001'),
+     'US', 'TEST-US-001', '/data/vehicles/us/001', 2, 1),  -- TRUCK, ACTIVE
     ('11111111-1111-1111-1111-111111111115', EXTRACT(EPOCH FROM NOW() - INTERVAL '22 days')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT, 
-     'US', 'TEST-US-002', '/data/vehicles/us/002'),
+     'US', 'TEST-US-002', '/data/vehicles/us/002', 1, 3),  -- SUV, TESTING
     
     -- German vehicles
     ('11111111-1111-1111-1111-111111111116', EXTRACT(EPOCH FROM NOW() - INTERVAL '15 days')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT, 
-     'DE', 'TEST-DE-001', '/data/vehicles/de/001'),
+     'DE', 'TEST-DE-001', '/data/vehicles/de/001', 0, 1),  -- SEDAN, ACTIVE
     ('11111111-1111-1111-1111-111111111117', EXTRACT(EPOCH FROM NOW() - INTERVAL '10 days')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT, 
-     'DE', 'TEST-DE-002', '/data/vehicles/de/002'),
+     'DE', 'TEST-DE-002', '/data/vehicles/de/002', 4, 4),  -- BUS, OFFLINE
     
     -- Chinese vehicles
     ('11111111-1111-1111-1111-111111111118', EXTRACT(EPOCH FROM NOW() - INTERVAL '18 days')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT, 
-     'CN', 'TEST-CN-001', '/data/vehicles/cn/001'),
+     'CN', 'TEST-CN-001', '/data/vehicles/cn/001', 3, 1),  -- VAN, ACTIVE
     
-    -- Vehicle without country
+    -- Vehicle without country - experimental type
     ('11111111-1111-1111-1111-111111111119', EXTRACT(EPOCH FROM NOW() - INTERVAL '5 days')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT, 
-     NULL, 'TEST-GLOBAL-001', NULL)
+     NULL, 'TEST-GLOBAL-001', NULL, 99, 0)  -- EXPERIMENTAL, INACTIVE
 ON CONFLICT (id) DO NOTHING;
 
 -- =====================================================

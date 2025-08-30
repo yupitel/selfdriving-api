@@ -16,12 +16,16 @@ CREATE TABLE IF NOT EXISTS vehicle (
     updated_at BIGINT NOT NULL,
     country TEXT,
     name TEXT NOT NULL,
-    data_path TEXT
+    data_path TEXT,
+    type SMALLINT NOT NULL,
+    status SMALLINT NOT NULL
 );
 
 -- Create indexes for vehicle table
 CREATE INDEX IF NOT EXISTS idx_vehicle_country ON vehicle(country);
 CREATE INDEX IF NOT EXISTS idx_vehicle_name ON vehicle(name);
+CREATE INDEX IF NOT EXISTS idx_vehicle_type ON vehicle(type);
+CREATE INDEX IF NOT EXISTS idx_vehicle_status ON vehicle(status);
 CREATE INDEX IF NOT EXISTS idx_vehicle_created_at ON vehicle(created_at DESC);
 
 -- Add comments
@@ -32,6 +36,8 @@ COMMENT ON COLUMN vehicle.updated_at IS 'Unix timestamp when the record was last
 COMMENT ON COLUMN vehicle.country IS 'Country where the vehicle operates';
 COMMENT ON COLUMN vehicle.name IS 'Name of the vehicle';
 COMMENT ON COLUMN vehicle.data_path IS 'Path to vehicle-related data';
+COMMENT ON COLUMN vehicle.type IS 'Vehicle type (0=SEDAN, 1=SUV, 2=TRUCK, 3=VAN, 4=BUS, 5=COMPACT, 6=MINIVAN, 99=EXPERIMENTAL)';
+COMMENT ON COLUMN vehicle.status IS 'Vehicle status (0=INACTIVE, 1=ACTIVE, 2=MAINTENANCE, 3=TESTING, 4=OFFLINE)';
 
 -- =====================================================
 -- 2. MEASUREMENT TABLE

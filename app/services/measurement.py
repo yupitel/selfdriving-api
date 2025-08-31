@@ -9,8 +9,11 @@ from app.schemas.measurement import (
     MeasurementCreate,
     MeasurementUpdate,
     MeasurementFilter,
-    MeasurementBulkCreate
+    MeasurementBulkCreate,
+    MeasurementDetailResponse
 )
+from app.schemas.datastream import ProcessingStatusEnum
+from app.services.datastream import DataStreamService
 from app.cores.config import BULK_INSERT_MAX_NUM
 
 logger = logging.getLogger(__name__)
@@ -175,3 +178,63 @@ class MeasurementService:
             self.session.rollback()
             logger.error(f"Error in bulk create: {str(e)}")
             raise
+    
+    async def get_measurement_detail(self, measurement_id: UUID) -> Optional[MeasurementDetailResponse]:
+        """Get measurement with detailed datastream information"""
+        try:
+            # Get measurement first
+            measurement = await self.get_measurement(measurement_id)
+            if not measurement:
+                return None
+            
+            # Get associated datastreams
+            datastream_service = DataStreamService(self.session)
+            datastreams = await datastream_service.get_datastreams_by_measurement(
+                measurement_id=measurement_id,
+                limit=100
+            )
+            
+            # Calculate aggregate processing status
+            processing_status = self._calculate_processing_status(datastreams)
+            
+            # Create detail response
+            detail_response = MeasurementDetailResponse(
+                **measurement.__dict__,
+                datastreams=datastreams,
+                total_segments=len(datastreams),
+                processing_status=processing_status
+            )
+            
+            logger.info(f"Retrieved measurement detail for {measurement_id} with {len(datastreams)} datastreams")
+            return detail_response
+            
+        except Exception as e:
+            logger.error(f"Error getting measurement detail {measurement_id}: {str(e)}")
+            raise
+    
+    def _calculate_processing_status(self, datastreams) -> str:
+        """Calculate aggregate processing status from datastreams"""
+        if not datastreams:
+            return "pending"
+        
+        status_counts = {}
+        for ds in datastreams:
+            status_name = ProcessingStatusEnum.get_name(ds.processing_status)
+            status_counts[status_name] = status_counts.get(status_name, 0) + 1
+        
+        total = len(datastreams)
+        
+        # If any failed, overall status is failed
+        if status_counts.get("FAILED", 0) > 0:
+            return "failed"
+        
+        # If all completed, status is completed
+        if status_counts.get("COMPLETED", 0) == total:
+            return "completed"
+        
+        # If any in progress, status is in_progress
+        if status_counts.get("PROCESSING", 0) > 0:
+            return "in_progress"
+        
+        # Otherwise pending
+        return "pending"

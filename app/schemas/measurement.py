@@ -4,6 +4,8 @@ from uuid import UUID
 from decimal import Decimal
 from pydantic import BaseModel, Field, ConfigDict
 
+from .datastream import DataStreamResponse
+
 
 class MeasurementBase(BaseModel):
     """Base measurement schema"""
@@ -80,6 +82,13 @@ class MeasurementFilter(BaseModel):
     limit: int = Field(100, ge=1, le=1000, description="Maximum number of records to return")
     
     
+class MeasurementDetailResponse(MeasurementResponse):
+    """Schema for measurement detail response with embedded datastreams"""
+    datastreams: Optional[List[DataStreamResponse]] = Field(default_factory=list, description="Associated datastreams")
+    total_segments: int = Field(0, description="Total number of datastream segments")
+    processing_status: str = Field("pending", description="Aggregate processing status")
+
+
 class MeasurementBulkCreate(BaseModel):
     """Schema for bulk creating measurements"""
     measurements: List[MeasurementCreate]

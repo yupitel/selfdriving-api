@@ -13,7 +13,8 @@ from app.schemas.measurement import (
     MeasurementResponse,
     MeasurementListResponse,
     MeasurementFilter,
-    MeasurementBulkCreate
+    MeasurementBulkCreate,
+    MeasurementDetailResponse
 )
 from app.services.measurement import MeasurementService
 
@@ -66,6 +67,27 @@ async def get_measurement(
     )
 
 
+@router.get("/{measurement_id}/detail", response_model=BaseResponse[MeasurementDetailResponse])
+async def get_measurement_detail(
+    measurement_id: UUID,
+    session: Session = Depends(get_session)
+):
+    """Get measurement with detailed datastream information"""
+    service = MeasurementService(session)
+    measurement_detail = await service.get_measurement_detail(measurement_id)
+    
+    if not measurement_detail:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Measurement with ID {measurement_id} not found"
+        )
+    
+    return BaseResponse(
+        success=True,
+        data=measurement_detail
+    )
+
+
 @router.get("/", response_model=MeasurementListResponse)
 async def get_measurements(
     vehicle_id: Optional[UUID] = Query(None, description="Filter by vehicle ID"),
@@ -77,21 +99,19 @@ async def get_measurements(
     session: Session = Depends(get_session)
 ):
     """Get measurements with filtering and pagination"""
+    offset = (page - 1) * per_page
+    
     filter_params = MeasurementFilter(
         vehicle_id=vehicle_id,
         area_id=area_id,
         start_time=start_time,
-        end_time=end_time
-    )
-    
-    skip = (page - 1) * per_page
-    
-    service = MeasurementService(session)
-    measurements, total = await service.get_measurements(
-        filter_params=filter_params,
-        skip=skip,
+        end_time=end_time,
+        offset=offset,
         limit=per_page
     )
+    
+    service = MeasurementService(session)
+    measurements, total = await service.get_measurements(filter_params)
     
     measurement_responses = [
         MeasurementResponse.model_validate(m) for m in measurements

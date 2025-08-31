@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
@@ -10,6 +10,8 @@ from app.schemas.scene import (
     SceneUpdate,
     SceneResponse,
     SceneFilter,
+    SceneDetailResponse,
+    SceneListItemResponse,
 )
 from app.services.scene import SceneService
 from app.utils.exceptions import (
@@ -56,34 +58,46 @@ async def create_scene(
         )
 
 
-@router.get("/", response_model=List[SceneResponse])
+@router.get("/", response_model=List[Union[SceneListItemResponse, SceneResponse]])
 async def list_scenes(
     type: Optional[int] = Query(None, ge=0, le=32767, description="Filter by type"),
     state: Optional[int] = Query(None, ge=0, le=32767, description="Filter by state"),
     datastream_id: Optional[UUID] = Query(None, description="Filter by datastream ID"),
+    vehicle_id: Optional[UUID] = Query(None, description="Filter by vehicle ID"),
+    driver_id: Optional[UUID] = Query(None, description="Filter by driver ID"),
     name: Optional[str] = Query(None, description="Filter by name (partial match)"),
     start_time: Optional[str] = Query(None, description="Filter by creation time (after)"),
     end_time: Optional[str] = Query(None, description="Filter by creation time (before)"),
     limit: int = Query(100, gt=0, le=1000, description="Maximum number of results"),
     offset: int = Query(0, ge=0, description="Number of results to skip"),
+    include_metadata: bool = Query(True, description="Include vehicle/driver metadata"),
     session: Session = Depends(get_session),
-) -> List[SceneResponse]:
-    """List scenes with optional filters."""
+) -> List[Union[SceneListItemResponse, SceneResponse]]:
+    """List scenes with optional filters and metadata."""
     try:
         filters = SceneFilter(
             type=type,
             state=state,
             datastream_id=datastream_id,
+            vehicle_id=vehicle_id,
+            driver_id=driver_id,
             name=name,
             start_time=start_time,
             end_time=end_time,
             limit=limit,
             offset=offset,
+            include_metadata=include_metadata,
         )
 
         service = SceneService(session)
-        scenes = await service.list_scenes(filters)
-        return [SceneResponse.model_validate(s) for s in scenes]
+        
+        if include_metadata:
+            # Returns SceneListItemResponse objects with metadata
+            return await service.list_scenes_with_metadata(filters)
+        else:
+            # Returns basic SceneResponse objects
+            scenes = await service.list_scenes(filters)
+            return [SceneResponse.model_validate(s) for s in scenes]
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -104,6 +118,22 @@ async def get_scene(scene_id: UUID, session: Session = Depends(get_session)) -> 
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get scene: {str(e)}",
+        )
+
+
+@router.get("/{scene_id}/detail", response_model=SceneDetailResponse)
+async def get_scene_detail(scene_id: UUID, session: Session = Depends(get_session)) -> SceneDetailResponse:
+    """Get a specific scene with full details including vehicle, driver, and measurement information."""
+    try:
+        service = SceneService(session)
+        scene_detail = await service.get_scene_detail(scene_id)
+        return scene_detail
+    except NotFoundException as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get scene detail: {str(e)}",
         )
 
 

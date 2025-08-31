@@ -8,7 +8,7 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.cores.db_init import initialize_database, get_db_mode
-from app.routers import measurements, datastreams, vehicles, pipelines, drivers, health
+from app.routers import measurements, datastreams, vehicles, pipelines, drivers, health, pipelinedata, pipelinestate, pipelinedependency
 from app.schemas.base import BaseResponse
 
 # Configure logging
@@ -117,6 +117,13 @@ app.include_router(datastreams.router)
 app.include_router(vehicles.router)
 app.include_router(pipelines.router)
 app.include_router(drivers.router)
+app.include_router(pipelinedata.router)
+# New plural routes
+app.include_router(pipelinestate.router)
+app.include_router(pipelinedependency.router)
+# Legacy singular routes (backward compatibility)
+app.include_router(pipelinestate.legacy_router)
+app.include_router(pipelinedependency.legacy_router)
 
 
 # Root endpoint
@@ -134,7 +141,12 @@ async def root():
                 "datastreams": "/api/v1/datastreams",
                 "vehicles": "/api/v1/vehicles",
                 "pipelines": "/api/v1/pipelines",
-                "drivers": "/api/v1/drivers"
+                "drivers": "/api/v1/drivers",
+                "pipelinedata": "/api/v1/pipelinedata",
+                "pipelinestates": "/api/v1/pipelinestates",
+                "pipelinedependencies": "/api/v1/pipelinedependencies",
+                "pipelinestate (legacy)": "/api/v1/pipelinestate",
+                "pipelinedependency (legacy)": "/api/v1/pipelinedependency"
             }
         }
     )

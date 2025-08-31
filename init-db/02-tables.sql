@@ -289,5 +289,118 @@ COMMENT ON COLUMN pipeline.params IS 'Required pipeline parameters as JSON strin
 
 
 -- =====================================================
+-- 6. PIPELINEDATA TABLE
+-- =====================================================
+CREATE TABLE IF NOT EXISTS pipelinedata (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    created_at BIGINT NOT NULL,
+    updated_at BIGINT NOT NULL,
+    name TEXT,
+    type SMALLINT NOT NULL,
+    datastream_id UUID,
+    scene_id UUID,
+    source TEXT,
+    data_path TEXT,
+    params TEXT,  -- JSON string for parameters
+    CONSTRAINT fk_pipelinedata_datastream 
+        FOREIGN KEY (datastream_id) 
+        REFERENCES datastream(id) 
+        ON DELETE SET NULL
+);
+
+-- Create indexes for pipelinedata table
+CREATE INDEX IF NOT EXISTS idx_pipelinedata_type ON pipelinedata(type);
+CREATE INDEX IF NOT EXISTS idx_pipelinedata_datastream_id ON pipelinedata(datastream_id);
+CREATE INDEX IF NOT EXISTS idx_pipelinedata_scene_id ON pipelinedata(scene_id);
+CREATE INDEX IF NOT EXISTS idx_pipelinedata_source ON pipelinedata(source);
+CREATE INDEX IF NOT EXISTS idx_pipelinedata_created_at ON pipelinedata(created_at DESC);
+
+-- Add comments
+COMMENT ON TABLE pipelinedata IS 'Pipeline data entries for processing jobs';
+COMMENT ON COLUMN pipelinedata.id IS 'Unique identifier for the pipeline data';
+COMMENT ON COLUMN pipelinedata.created_at IS 'Unix timestamp when the record was created';
+COMMENT ON COLUMN pipelinedata.updated_at IS 'Unix timestamp when the record was last updated';
+COMMENT ON COLUMN pipelinedata.name IS 'Name or description of the pipeline data';
+COMMENT ON COLUMN pipelinedata.type IS 'Type of pipeline data (0=RAW_DATA, 1=PROCESSED_DATA, 2=ANNOTATED_DATA, 3=VALIDATED_DATA, 4=TRAINING_DATA, 5=TEST_DATA, 99=OTHER)';
+COMMENT ON COLUMN pipelinedata.datastream_id IS 'Reference to associated datastream';
+COMMENT ON COLUMN pipelinedata.scene_id IS 'Reference to associated scene';
+COMMENT ON COLUMN pipelinedata.source IS 'Source information for the data';
+COMMENT ON COLUMN pipelinedata.data_path IS 'Path to the data file or directory';
+COMMENT ON COLUMN pipelinedata.params IS 'Additional parameters as JSON string';
+
+-- =====================================================
+-- 7. PIPELINESTATE TABLE
+-- =====================================================
+CREATE TABLE IF NOT EXISTS pipelinestate (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    created_at BIGINT NOT NULL,
+    updated_at BIGINT NOT NULL,
+    pipelinedata_id UUID NOT NULL,
+    pipeline_id UUID NOT NULL,
+    input TEXT NOT NULL,  -- JSON string for input configuration
+    output TEXT NOT NULL,  -- JSON string for output results
+    state SMALLINT NOT NULL,
+    CONSTRAINT fk_pipelinestate_pipelinedata 
+        FOREIGN KEY (pipelinedata_id) 
+        REFERENCES pipelinedata(id) 
+        ON DELETE CASCADE,
+    CONSTRAINT fk_pipelinestate_pipeline 
+        FOREIGN KEY (pipeline_id) 
+        REFERENCES pipeline(id) 
+        ON DELETE CASCADE
+);
+
+-- Create indexes for pipelinestate table
+CREATE INDEX IF NOT EXISTS idx_pipelinestate_pipelinedata_id ON pipelinestate(pipelinedata_id);
+CREATE INDEX IF NOT EXISTS idx_pipelinestate_pipeline_id ON pipelinestate(pipeline_id);
+CREATE INDEX IF NOT EXISTS idx_pipelinestate_state ON pipelinestate(state);
+CREATE INDEX IF NOT EXISTS idx_pipelinestate_created_at ON pipelinestate(created_at DESC);
+
+-- Add comments
+COMMENT ON TABLE pipelinestate IS 'Pipeline execution states representing jobs';
+COMMENT ON COLUMN pipelinestate.id IS 'Unique identifier for the pipeline state';
+COMMENT ON COLUMN pipelinestate.created_at IS 'Unix timestamp when the record was created';
+COMMENT ON COLUMN pipelinestate.updated_at IS 'Unix timestamp when the record was last updated';
+COMMENT ON COLUMN pipelinestate.pipelinedata_id IS 'Reference to the pipeline data being processed';
+COMMENT ON COLUMN pipelinestate.pipeline_id IS 'Reference to the pipeline configuration';
+COMMENT ON COLUMN pipelinestate.input IS 'Input configuration as JSON string';
+COMMENT ON COLUMN pipelinestate.output IS 'Output results as JSON string';
+COMMENT ON COLUMN pipelinestate.state IS 'Execution state (0=PENDING, 1=RUNNING, 2=COMPLETED, 3=FAILED, 4=CANCELLED, 5=PAUSED)';
+
+-- =====================================================
+-- 8. PIPELINEDEPENDENCY TABLE
+-- =====================================================
+CREATE TABLE IF NOT EXISTS pipelinedependency (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    created_at BIGINT NOT NULL,
+    updated_at BIGINT NOT NULL,
+    parent_id UUID NOT NULL,
+    child_id UUID NOT NULL,
+    CONSTRAINT fk_pipelinedependency_parent 
+        FOREIGN KEY (parent_id) 
+        REFERENCES pipelinestate(id) 
+        ON DELETE CASCADE,
+    CONSTRAINT fk_pipelinedependency_child 
+        FOREIGN KEY (child_id) 
+        REFERENCES pipelinestate(id) 
+        ON DELETE CASCADE,
+    CONSTRAINT uk_pipelinedependency_parent_child 
+        UNIQUE (parent_id, child_id)
+);
+
+-- Create indexes for pipelinedependency table
+CREATE INDEX IF NOT EXISTS idx_pipelinedependency_parent_id ON pipelinedependency(parent_id);
+CREATE INDEX IF NOT EXISTS idx_pipelinedependency_child_id ON pipelinedependency(child_id);
+CREATE INDEX IF NOT EXISTS idx_pipelinedependency_created_at ON pipelinedependency(created_at DESC);
+
+-- Add comments
+COMMENT ON TABLE pipelinedependency IS 'Dependencies between pipeline states (jobs)';
+COMMENT ON COLUMN pipelinedependency.id IS 'Unique identifier for the dependency';
+COMMENT ON COLUMN pipelinedependency.created_at IS 'Unix timestamp when the record was created';
+COMMENT ON COLUMN pipelinedependency.updated_at IS 'Unix timestamp when the record was last updated';
+COMMENT ON COLUMN pipelinedependency.parent_id IS 'Reference to the parent pipeline state (must complete before child)';
+COMMENT ON COLUMN pipelinedependency.child_id IS 'Reference to the child pipeline state (depends on parent)';
+
+-- =====================================================
 -- End of Table Creation Script
 -- =====================================================

@@ -105,6 +105,42 @@ uvicorn app.main:app --reload
 | DELETE | `/api/v1/measurements/{id}` | 測定データの削除 |
 | POST | `/api/v1/measurements/bulk` | 測定データの一括作成 |
 
+### Pipeline API
+
+ベースURL: `http://localhost:8000/api/v1`
+
+パスの命名規則は複数形に統一しました（legacyの単数形は当面互換のため維持）。
+
+| リソース | メソッド | エンドポイント | 説明 |
+|---------|---------|--------------|------|
+| pipelinedata | GET | `/pipelinedata` | パイプラインデータ一覧の取得 |
+| pipelinedata | POST | `/pipelinedata` | パイプラインデータの作成 |
+| pipelinedata | GET | `/pipelinedata/{id}` | パイプラインデータの取得 |
+| pipelinedata | PUT | `/pipelinedata/{id}` | パイプラインデータの更新 |
+| pipelinedata | DELETE | `/pipelinedata/{id}` | パイプラインデータの削除 |
+| pipelinedata | POST | `/pipelinedata/bulk` | パイプラインデータの一括作成 |
+| pipelinestates | GET | `/pipelinestates` | パイプライン状態一覧の取得 |
+| pipelinestates | POST | `/pipelinestates` | パイプライン状態の作成 |
+| pipelinestates | GET | `/pipelinestates/{id}` | パイプライン状態の取得 |
+| pipelinestates | PUT | `/pipelinestates/{id}` | パイプライン状態の更新 |
+| pipelinestates | DELETE | `/pipelinestates/{id}` | パイプライン状態の削除 |
+| pipelinestates | POST | `/pipelinestates/bulk` | パイプライン状態の一括作成 |
+| pipelinestates | GET | `/pipelinestates/jobs/by-pipelinedata/{pipelinedata_id}` | 指定データのジョブ一覧 |
+| pipelinedependencies | GET | `/pipelinedependencies` | 依存関係一覧の取得 |
+| pipelinedependencies | POST | `/pipelinedependencies` | 依存関係の作成 |
+| pipelinedependencies | GET | `/pipelinedependencies/{id}` | 依存関係の取得 |
+| pipelinedependencies | PUT | `/pipelinedependencies/{id}` | 依存関係の更新 |
+| pipelinedependencies | DELETE | `/pipelinedependencies/{id}` | 依存関係の削除 |
+| pipelinedependencies | POST | `/pipelinedependencies/bulk` | 依存関係の一括作成 |
+| pipelinedependencies | GET | `/pipelinedependencies/parent/{parent_id}/children` | 親→子の依存関係 |
+| pipelinedependencies | GET | `/pipelinedependencies/child/{child_id}/parents` | 子→親の依存関係 |
+| pipelinedependencies | GET | `/pipelinedependencies/chain/{pipeline_state_id}` | 双方向チェーン取得 |
+
+Legacy 互換パス（将来削除予定）
+
+- `/api/v1/pipelinestate` → 新: `/api/v1/pipelinestates`
+- `/api/v1/pipelinedependency` → 新: `/api/v1/pipelinedependencies`
+
 ### リクエスト例
 
 #### 測定データの作成

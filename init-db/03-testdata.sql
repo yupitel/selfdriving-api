@@ -435,7 +435,126 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 -- =====================================================
--- 5. VERIFICATION QUERIES
+-- 5. PIPELINEDATA TEST DATA
+-- =====================================================
+INSERT INTO pipelinedata (id, created_at, updated_at, name, type, datastream_id, scene_id, source, data_path, params)
+VALUES
+    -- Raw data entries
+    ('55555555-5555-5555-5555-555555555501', EXTRACT(EPOCH FROM NOW() - INTERVAL '30 days')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT,
+     'Raw Camera Data Batch 001', 0, '33333333-3333-3333-3333-333333333331', NULL, 
+     'vehicle_001_camera', '/data/raw/camera/batch_001/', 
+     '{"format": "h264", "resolution": "1920x1080", "fps": 30}'),
+    
+    ('55555555-5555-5555-5555-555555555502', EXTRACT(EPOCH FROM NOW() - INTERVAL '29 days')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT,
+     'Raw LiDAR Data Batch 001', 0, '33333333-3333-3333-3333-333333333332', NULL,
+     'vehicle_001_lidar', '/data/raw/lidar/batch_001/',
+     '{"point_cloud_format": "pcd", "points_per_second": 700000}'),
+    
+    -- Processed data entries
+    ('55555555-5555-5555-5555-555555555503', EXTRACT(EPOCH FROM NOW() - INTERVAL '28 days')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT,
+     'Processed Camera Features', 1, '33333333-3333-3333-3333-333333333331', NULL,
+     'feature_extraction_v2', '/data/processed/features/camera_001/',
+     '{"feature_type": "semantic_segmentation", "model": "deeplabv3"}'),
+    
+    ('55555555-5555-5555-5555-555555555504', EXTRACT(EPOCH FROM NOW() - INTERVAL '27 days')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT,
+     'Point Cloud Segmentation', 1, '33333333-3333-3333-3333-333333333332', NULL,
+     'pointnet_processor', '/data/processed/pointcloud/segmented_001/',
+     '{"segmentation_classes": 10, "downsampling_ratio": 0.5}'),
+    
+    -- Annotated data entries
+    ('55555555-5555-5555-5555-555555555505', EXTRACT(EPOCH FROM NOW() - INTERVAL '25 days')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT,
+     'Annotated Traffic Signs', 2, '33333333-3333-3333-3333-333333333333', NULL,
+     'annotation_team_alpha', '/data/annotated/traffic_signs/',
+     '{"annotation_tool": "labelbox", "classes": ["stop", "yield", "speed_limit"]}'),
+    
+    -- Training data entries
+    ('55555555-5555-5555-5555-555555555506', EXTRACT(EPOCH FROM NOW() - INTERVAL '20 days')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT,
+     'Object Detection Training Set', 4, NULL, NULL,
+     'training_pipeline', '/data/training/object_detection_v3/',
+     '{"dataset_size": 50000, "augmentation": true, "split": {"train": 0.8, "val": 0.2}}'),
+    
+    -- Test data entries
+    ('55555555-5555-5555-5555-555555555507', EXTRACT(EPOCH FROM NOW() - INTERVAL '15 days')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT,
+     'Model Validation Dataset', 5, NULL, NULL,
+     'validation_pipeline', '/data/test/validation_set_001/',
+     '{"test_scenarios": ["urban", "highway", "rural"], "metrics": ["mAP", "IoU"]}')
+ON CONFLICT (id) DO NOTHING;
+
+-- =====================================================
+-- 6. PIPELINESTATE TEST DATA (Jobs)
+-- =====================================================
+INSERT INTO pipelinestate (id, created_at, updated_at, pipelinedata_id, pipeline_id, input, output, state)
+VALUES
+    -- Completed jobs
+    ('66666666-6666-6666-6666-666666666601', EXTRACT(EPOCH FROM NOW() - INTERVAL '25 days')::BIGINT, EXTRACT(EPOCH FROM NOW() - INTERVAL '24 days')::BIGINT,
+     '55555555-5555-5555-5555-555555555501', '44444444-4444-4444-4444-444444444441',
+     '{"source_path": "/data/raw/camera/batch_001/", "target_path": "/data/collection/"}',
+     '{"files_processed": 150, "total_size": "45GB", "duration_seconds": 3600}', 2),
+    
+    ('66666666-6666-6666-6666-666666666602', EXTRACT(EPOCH FROM NOW() - INTERVAL '24 days')::BIGINT, EXTRACT(EPOCH FROM NOW() - INTERVAL '23 days')::BIGINT,
+     '55555555-5555-5555-5555-555555555502', '44444444-4444-4444-4444-444444444441',
+     '{"source_path": "/data/raw/lidar/batch_001/", "target_path": "/data/collection/"}',
+     '{"files_processed": 100, "total_size": "120GB", "duration_seconds": 5400}', 2),
+    
+    -- Running jobs
+    ('66666666-6666-6666-6666-666666666603', EXTRACT(EPOCH FROM NOW() - INTERVAL '2 hours')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT,
+     '55555555-5555-5555-5555-555555555503', '44444444-4444-4444-4444-444444444442',
+     '{"input_data": "/data/processed/features/camera_001/", "processing_params": {"batch_size": 32}}',
+     '{"progress": 0.65, "estimated_completion": "2 hours"}', 1),
+    
+    -- Pending jobs
+    ('66666666-6666-6666-6666-666666666604', EXTRACT(EPOCH FROM NOW() - INTERVAL '1 hour')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT,
+     '55555555-5555-5555-5555-555555555504', '44444444-4444-4444-4444-444444444443',
+     '{"validation_set": "/data/test/validation_set_001/", "model_path": "/models/latest/"}',
+     '{}', 0),
+    
+    -- Failed jobs
+    ('66666666-6666-6666-6666-666666666605', EXTRACT(EPOCH FROM NOW() - INTERVAL '5 days')::BIGINT, EXTRACT(EPOCH FROM NOW() - INTERVAL '5 days')::BIGINT,
+     '55555555-5555-5555-5555-555555555505', '44444444-4444-4444-4444-444444444444',
+     '{"training_data": "/data/annotated/traffic_signs/", "model_config": "resnet50"}',
+     '{"error": "Out of memory", "error_code": "OOM", "last_checkpoint": "epoch_15"}', 3),
+    
+    -- Jobs with dependencies (for testing pipelinedependency)
+    ('66666666-6666-6666-6666-666666666606', EXTRACT(EPOCH FROM NOW() - INTERVAL '3 days')::BIGINT, EXTRACT(EPOCH FROM NOW() - INTERVAL '3 days')::BIGINT,
+     '55555555-5555-5555-5555-555555555506', '44444444-4444-4444-4444-444444444445',
+     '{"input": "/data/training/object_detection_v3/", "epochs": 100}',
+     '{"model_path": "/models/object_detection_v3.pt", "final_loss": 0.023}', 2),
+    
+    ('66666666-6666-6666-6666-666666666607', EXTRACT(EPOCH FROM NOW() - INTERVAL '2 days')::BIGINT, EXTRACT(EPOCH FROM NOW() - INTERVAL '2 days')::BIGINT,
+     '55555555-5555-5555-5555-555555555507', '44444444-4444-4444-4444-444444444446',
+     '{"model": "/models/object_detection_v3.pt", "test_data": "/data/test/validation_set_001/"}',
+     '{"mAP": 0.85, "inference_time_ms": 45, "false_positives": 12}', 2),
+    
+    -- Cancelled job
+    ('66666666-6666-6666-6666-666666666608', EXTRACT(EPOCH FROM NOW() - INTERVAL '1 day')::BIGINT, EXTRACT(EPOCH FROM NOW() - INTERVAL '1 day')::BIGINT,
+     '55555555-5555-5555-5555-555555555501', '44444444-4444-4444-4444-444444444447',
+     '{"dataset": "/data/raw/camera/batch_001/", "target_format": "tfrecord"}',
+     '{"cancelled_by": "admin", "reason": "Duplicate job"}', 4)
+ON CONFLICT (id) DO NOTHING;
+
+-- =====================================================
+-- 7. PIPELINEDEPENDENCY TEST DATA
+-- =====================================================
+INSERT INTO pipelinedependency (id, created_at, updated_at, parent_id, child_id)
+VALUES
+    -- Training must complete before inference
+    ('77777777-7777-7777-7777-777777777701', EXTRACT(EPOCH FROM NOW() - INTERVAL '3 days')::BIGINT, EXTRACT(EPOCH FROM NOW() - INTERVAL '3 days')::BIGINT,
+     '66666666-6666-6666-6666-666666666606', '66666666-6666-6666-6666-666666666607'),
+    
+    -- Raw data collection must complete before processing
+    ('77777777-7777-7777-7777-777777777702', EXTRACT(EPOCH FROM NOW() - INTERVAL '25 days')::BIGINT, EXTRACT(EPOCH FROM NOW() - INTERVAL '25 days')::BIGINT,
+     '66666666-6666-6666-6666-666666666601', '66666666-6666-6666-6666-666666666603'),
+    
+    ('77777777-7777-7777-7777-777777777703', EXTRACT(EPOCH FROM NOW() - INTERVAL '24 days')::BIGINT, EXTRACT(EPOCH FROM NOW() - INTERVAL '24 days')::BIGINT,
+     '66666666-6666-6666-6666-666666666602', '66666666-6666-6666-6666-666666666604'),
+    
+    -- Multiple dependencies - both camera and lidar processing must complete before validation
+    ('77777777-7777-7777-7777-777777777704', EXTRACT(EPOCH FROM NOW() - INTERVAL '2 hours')::BIGINT, EXTRACT(EPOCH FROM NOW() - INTERVAL '2 hours')::BIGINT,
+     '66666666-6666-6666-6666-666666666603', '66666666-6666-6666-6666-666666666604')
+ON CONFLICT (id) DO NOTHING;
+
+-- =====================================================
+-- 8. VERIFICATION QUERIES
 -- =====================================================
 -- Run these queries to verify the test data was inserted correctly
 
@@ -447,12 +566,18 @@ DECLARE
     measurement_count INTEGER;
     datastream_count INTEGER;
     pipeline_count INTEGER;
+    pipelinedata_count INTEGER;
+    pipelinestate_count INTEGER;
+    pipelinedependency_count INTEGER;
 BEGIN
     SELECT COUNT(*) INTO vehicle_count FROM vehicle WHERE name LIKE 'TEST-%';
     SELECT COUNT(*) INTO driver_count FROM driver;
     SELECT COUNT(*) INTO measurement_count FROM measurement;
     SELECT COUNT(*) INTO datastream_count FROM datastream;
     SELECT COUNT(*) INTO pipeline_count FROM pipeline;
+    SELECT COUNT(*) INTO pipelinedata_count FROM pipelinedata;
+    SELECT COUNT(*) INTO pipelinestate_count FROM pipelinestate;
+    SELECT COUNT(*) INTO pipelinedependency_count FROM pipelinedependency;
     
     RAISE NOTICE 'Test data insertion complete:';
     RAISE NOTICE '  Vehicles: % records', vehicle_count;
@@ -460,6 +585,9 @@ BEGIN
     RAISE NOTICE '  Measurements: % records', measurement_count;
     RAISE NOTICE '  Datastreams: % records', datastream_count;
     RAISE NOTICE '  Pipelines: % records', pipeline_count;
+    RAISE NOTICE '  Pipeline Data: % records', pipelinedata_count;
+    RAISE NOTICE '  Pipeline States (Jobs): % records', pipelinestate_count;
+    RAISE NOTICE '  Pipeline Dependencies: % records', pipelinedependency_count;
 END $$;
 
 -- =====================================================

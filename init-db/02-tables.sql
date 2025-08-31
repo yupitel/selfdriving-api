@@ -142,6 +142,45 @@ COMMENT ON COLUMN datastream.data_loss_duration IS 'Duration of data loss in mil
 COMMENT ON COLUMN datastream.processing_status IS 'Processing status (0=PENDING, 1=PROCESSING, 2=COMPLETED, 3=FAILED)';
 
 -- =====================================================
+-- 4. SCENE TABLE
+-- =====================================================
+CREATE TABLE IF NOT EXISTS scene (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    created_at BIGINT NOT NULL,
+    updated_at BIGINT NOT NULL,
+    name TEXT,
+    type SMALLINT NOT NULL,
+    state SMALLINT NOT NULL,
+    datastream_id UUID,
+    start_idx INTEGER NOT NULL,
+    end_idx INTEGER NOT NULL,
+    data_path TEXT,
+    CONSTRAINT fk_scene_datastream
+        FOREIGN KEY (datastream_id)
+        REFERENCES datastream(id)
+        ON DELETE SET NULL
+);
+
+-- Create indexes for scene table
+CREATE INDEX IF NOT EXISTS idx_scene_type ON scene(type);
+CREATE INDEX IF NOT EXISTS idx_scene_state ON scene(state);
+CREATE INDEX IF NOT EXISTS idx_scene_datastream_id ON scene(datastream_id);
+CREATE INDEX IF NOT EXISTS idx_scene_created_at ON scene(created_at DESC);
+
+-- Add comments
+COMMENT ON TABLE scene IS 'Scene segments or events detected within datastreams';
+COMMENT ON COLUMN scene.id IS 'Unique identifier for the scene';
+COMMENT ON COLUMN scene.created_at IS 'Unix timestamp when the record was created';
+COMMENT ON COLUMN scene.updated_at IS 'Unix timestamp when the record was last updated';
+COMMENT ON COLUMN scene.name IS 'Name or description of the scene (e.g., crosswalk)';
+COMMENT ON COLUMN scene.type IS 'Scene type (application-defined, 0-32767)';
+COMMENT ON COLUMN scene.state IS 'Scene state (application-defined, 0-32767)';
+COMMENT ON COLUMN scene.datastream_id IS 'Reference to the associated datastream';
+COMMENT ON COLUMN scene.start_idx IS 'Inclusive start index within the datastream';
+COMMENT ON COLUMN scene.end_idx IS 'Inclusive end index within the datastream';
+COMMENT ON COLUMN scene.data_path IS 'Optional path to artifacts for this scene';
+
+-- =====================================================
 -- 4. DRIVER TABLE
 -- =====================================================
 CREATE TABLE IF NOT EXISTS driver (
@@ -327,6 +366,13 @@ COMMENT ON COLUMN pipelinedata.scene_id IS 'Reference to associated scene';
 COMMENT ON COLUMN pipelinedata.source IS 'Source information for the data';
 COMMENT ON COLUMN pipelinedata.data_path IS 'Path to the data file or directory';
 COMMENT ON COLUMN pipelinedata.params IS 'Additional parameters as JSON string';
+
+-- Add foreign key for scene reference (defined after scene table exists)
+ALTER TABLE IF EXISTS pipelinedata
+    ADD CONSTRAINT fk_pipelinedata_scene
+    FOREIGN KEY (scene_id)
+    REFERENCES scene(id)
+    ON DELETE SET NULL;
 
 -- =====================================================
 -- 7. PIPELINESTATE TABLE

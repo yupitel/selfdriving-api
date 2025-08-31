@@ -8,7 +8,7 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.cores.db_init import initialize_database, get_db_mode
-from app.routers import measurements, datastreams, vehicles, pipelines, drivers, health, pipelinedata, pipelinestate, pipelinedependency
+from app.routers import measurements, datastreams, vehicles, pipelines, drivers, health, pipelinedata, pipelinestate, pipelinedependency, scenes
 from app.schemas.base import BaseResponse
 
 # Configure logging
@@ -118,13 +118,9 @@ app.include_router(vehicles.router)
 app.include_router(pipelines.router)
 app.include_router(drivers.router)
 app.include_router(pipelinedata.router)
-# New plural routes
 app.include_router(pipelinestate.router)
 app.include_router(pipelinedependency.router)
-# Legacy singular routes (backward compatibility)
-app.include_router(pipelinestate.legacy_router)
-app.include_router(pipelinedependency.legacy_router)
-
+app.include_router(scenes.router)
 
 # Root endpoint
 @app.get("/", response_model=BaseResponse)
@@ -138,8 +134,9 @@ async def root():
             "endpoints": {
                 "health": "/api/v1/health",
                 "measurements": "/api/v1/measurements",
-                "datastreams": "/api/v1/datastreams",
-                "vehicles": "/api/v1/vehicles",
+            "datastreams": "/api/v1/datastreams",
+            "scenes": "/api/v1/scenes",
+            "vehicles": "/api/v1/vehicles",
                 "pipelines": "/api/v1/pipelines",
                 "drivers": "/api/v1/drivers",
                 "pipelinedata": "/api/v1/pipelinedata",

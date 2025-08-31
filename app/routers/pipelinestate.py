@@ -21,14 +21,9 @@ router = APIRouter(
     prefix="/api/v1/pipelinestates",
     tags=["Pipeline States"]
 )
-legacy_router = APIRouter(
-    prefix="/api/v1/pipelinestate",
-    tags=["Pipeline State (legacy)"]
-)
 
 
 @router.post("/", response_model=BaseResponse[PipelineStateResponse], status_code=status.HTTP_201_CREATED)
-@legacy_router.post("/", response_model=BaseResponse[PipelineStateResponse], status_code=status.HTTP_201_CREATED)
 async def create_pipeline_state(
     pipeline_state: PipelineStateCreate,
     session: Session = Depends(get_session)
@@ -51,7 +46,6 @@ async def create_pipeline_state(
 
 
 @router.get("/{pipeline_state_id}", response_model=BaseResponse[PipelineStateResponse])
-@legacy_router.get("/{pipeline_state_id}", response_model=BaseResponse[PipelineStateResponse])
 async def get_pipeline_state(
     pipeline_state_id: UUID,
     session: Session = Depends(get_session)
@@ -73,7 +67,6 @@ async def get_pipeline_state(
 
 
 @router.get("/{pipeline_state_id}/detail", response_model=BaseResponse[PipelineStateDetailResponse])
-@legacy_router.get("/{pipeline_state_id}/detail", response_model=BaseResponse[PipelineStateDetailResponse])
 async def get_pipeline_state_detail(
     pipeline_state_id: UUID,
     session: Session = Depends(get_session)
@@ -95,7 +88,6 @@ async def get_pipeline_state_detail(
 
 
 @router.get("/", response_model=PipelineStateListResponse)
-@legacy_router.get("/", response_model=PipelineStateListResponse)
 async def get_pipeline_states(
     pipelinedata_id: Optional[UUID] = Query(None, description="Filter by pipeline data ID"),
     pipeline_id: Optional[UUID] = Query(None, description="Filter by pipeline ID"),
@@ -131,7 +123,6 @@ async def get_pipeline_states(
 
 
 @router.put("/{pipeline_state_id}", response_model=BaseResponse[PipelineStateResponse])
-@legacy_router.put("/{pipeline_state_id}", response_model=BaseResponse[PipelineStateResponse])
 async def update_pipeline_state(
     pipeline_state_id: UUID,
     pipeline_state_update: PipelineStateUpdate,
@@ -161,7 +152,6 @@ async def update_pipeline_state(
 
 
 @router.delete("/{pipeline_state_id}", response_model=BaseResponse[None])
-@legacy_router.delete("/{pipeline_state_id}", response_model=BaseResponse[None])
 async def delete_pipeline_state(
     pipeline_state_id: UUID,
     session: Session = Depends(get_session)
@@ -189,7 +179,6 @@ async def delete_pipeline_state(
 
 
 @router.post("/bulk", response_model=BaseResponse[list[PipelineStateResponse]], status_code=status.HTTP_201_CREATED)
-@legacy_router.post("/bulk", response_model=BaseResponse[list[PipelineStateResponse]], status_code=status.HTTP_201_CREATED)
 async def bulk_create_pipeline_states(
     bulk_data: PipelineStateBulkCreate,
     session: Session = Depends(get_session)
@@ -222,7 +211,6 @@ async def bulk_create_pipeline_states(
 
 # Job-specific endpoints for managing pipeline states as jobs
 @router.get("/jobs/by-pipelinedata/{pipelinedata_id}", response_model=BaseResponse[list[PipelineStateResponse]])
-@legacy_router.get("/jobs/by-pipelinedata/{pipelinedata_id}", response_model=BaseResponse[list[PipelineStateResponse]])
 async def get_jobs_by_pipeline_data(
     pipelinedata_id: UUID,
     session: Session = Depends(get_session)

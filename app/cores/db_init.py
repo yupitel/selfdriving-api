@@ -18,6 +18,7 @@ from app.models.measurement import MeasurementModel
 from app.models.datastream import DataStreamModel
 from app.models.vehicle import VehicleModel
 from app.models.pipeline import PipelineModel
+from app.models.scene import SceneDataModel
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +109,8 @@ def check_tables_exist():
         "measurement",
         "datastream",
         "vehicle",
-        "pipeline"
+        "pipeline",
+        "scene",
     ]
     
     missing_tables = [table for table in expected_tables if table not in existing_tables]

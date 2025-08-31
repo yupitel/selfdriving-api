@@ -1,0 +1,140 @@
+{
+  "title": "Scene API E2E Tests",
+  "description": "End-to-end tests for the scene API",
+  "baseUrl": "http://localhost:8000",
+  "headers": {
+    "content-type": "application/json"
+  },
+  "preprocess": [
+    {
+      "type": "api",
+      "description": "Check API health before testing",
+      "api": "/api/v1/health",
+      "method": "GET"
+    }
+  ],
+  "tests": [
+    {
+      "name": "Scene CRUD Operations",
+      "description": "Test Create, Read, Update, List and Delete operations for scenes",
+      "assertions": [
+        {
+          "description": "Create a new scene",
+          "api": "/api/v1/scenes/",
+          "method": "POST",
+          "input": {
+            "name": "Crosswalk Test",
+            "type": 10,
+            "state": 0,
+            "datastream_id": "33333333-3333-3333-3333-333333333331",
+            "start_idx": 10,
+            "end_idx": 200,
+            "data_path": "/scenes/test/crosswalk.json"
+          },
+          "expected": {
+            "status": 201
+          },
+          "postprocess": [
+            {
+              "description": "Capture created scene ID",
+              "type": "capture",
+              "from": "id",
+              "to": "global.sceneId"
+            }
+          ]
+        },
+        {
+          "description": "Get the created scene by ID",
+          "api": "/api/v1/scenes/${global.sceneId}",
+          "method": "GET",
+          "expected": {
+            "status": 200,
+            "result": {
+              "name": "Crosswalk Test",
+              "type": 10,
+              "state": 0,
+              "datastream_id": "33333333-3333-3333-3333-333333333331"
+            }
+          }
+        },
+        {
+          "description": "Update the scene",
+          "api": "/api/v1/scenes/${global.sceneId}",
+          "method": "PUT",
+          "input": {
+            "state": 2,
+            "name": "Crosswalk Confirmed"
+          },
+          "expected": {
+            "status": 200,
+            "result": {
+              "state": 2,
+              "name": "Crosswalk Confirmed"
+            }
+          }
+        },
+        {
+          "description": "List scenes filtered by datastream",
+          "api": "/api/v1/scenes/",
+          "method": "GET",
+          "input": {
+            "datastream_id": "33333333-3333-3333-3333-333333333331",
+            "limit": 10
+          },
+          "expected": {
+            "status": 200
+          }
+        },
+        {
+          "description": "Delete the scene",
+          "api": "/api/v1/scenes/${global.sceneId}",
+          "method": "DELETE",
+          "expected": {
+            "status": 204
+          }
+        },
+        {
+          "description": "Verify scene was deleted",
+          "api": "/api/v1/scenes/${global.sceneId}",
+          "method": "GET",
+          "expected": {
+            "status": 404
+          }
+        }
+      ]
+    },
+    {
+      "name": "Scene Error Handling",
+      "description": "Invalid inputs and non-existent resources",
+      "assertions": [
+        {
+          "description": "Create scene with invalid index range",
+          "api": "/api/v1/scenes/",
+          "method": "POST",
+          "input": {
+            "type": 1,
+            "state": 0,
+            "datastream_id": "33333333-3333-3333-3333-333333333331",
+            "start_idx": 100,
+            "end_idx": 50
+          },
+          "expected": {
+            "status": 400
+          }
+        },
+        {
+          "description": "Update non-existent scene",
+          "api": "/api/v1/scenes/00000000-0000-0000-0000-000000000000",
+          "method": "PUT",
+          "input": {
+            "state": 1
+          },
+          "expected": {
+            "status": 404
+          }
+        }
+      ]
+    }
+  ]
+}
+

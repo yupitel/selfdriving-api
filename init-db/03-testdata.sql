@@ -318,6 +318,27 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 -- =====================================================
+-- 4. SCENE TEST DATA
+-- =====================================================
+-- Insert sample scenes within existing datastreams
+INSERT INTO scene (id, created_at, updated_at, name, type, state, datastream_id, start_idx, end_idx, data_path)
+VALUES
+    -- Scenes within Tokyo Highway Segment 1
+    ('88888888-8888-8888-8888-888888888801', EXTRACT(EPOCH FROM NOW() - INTERVAL '7 days')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT,
+     'Crosswalk', 0, 0, '33333333-3333-3333-3333-333333333331', 100, 250, '/scenes/tokyo_001_seg1/crosswalk.json'),
+    ('88888888-8888-8888-8888-888888888802', EXTRACT(EPOCH FROM NOW() - INTERVAL '7 days')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT,
+     'Traffic Light Red', 1, 0, '33333333-3333-3333-3333-333333333331', 400, 450, '/scenes/tokyo_001_seg1/traffic_light_red.json'),
+
+    -- Scenes within Tokyo City Segment 1
+    ('88888888-8888-8888-8888-888888888803', EXTRACT(EPOCH FROM NOW() - INTERVAL '6 days')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT,
+     'Pedestrian', 2, 1, '33333333-3333-3333-3333-333333333337', 50, 70, '/scenes/tokyo_002_seg1/pedestrian.json'),
+
+    -- Scene within Osaka Urban Full
+    ('88888888-8888-8888-8888-888888888804', EXTRACT(EPOCH FROM NOW() - INTERVAL '4 days')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT,
+     'Construction', 3, 2, '33333333-3333-3333-3333-333333333340', 700, 900, '/scenes/osaka_001/construction.json')
+ON CONFLICT (id) DO NOTHING;
+
+-- =====================================================
 -- 4. PIPELINE TEST DATA
 -- =====================================================
 -- Insert test pipelines with various configurations
@@ -565,6 +586,7 @@ DECLARE
     driver_count INTEGER;
     measurement_count INTEGER;
     datastream_count INTEGER;
+    scene_count INTEGER;
     pipeline_count INTEGER;
     pipelinedata_count INTEGER;
     pipelinestate_count INTEGER;
@@ -574,6 +596,7 @@ BEGIN
     SELECT COUNT(*) INTO driver_count FROM driver;
     SELECT COUNT(*) INTO measurement_count FROM measurement;
     SELECT COUNT(*) INTO datastream_count FROM datastream;
+    SELECT COUNT(*) INTO scene_count FROM scene;
     SELECT COUNT(*) INTO pipeline_count FROM pipeline;
     SELECT COUNT(*) INTO pipelinedata_count FROM pipelinedata;
     SELECT COUNT(*) INTO pipelinestate_count FROM pipelinestate;
@@ -584,6 +607,7 @@ BEGIN
     RAISE NOTICE '  Drivers: % records', driver_count;
     RAISE NOTICE '  Measurements: % records', measurement_count;
     RAISE NOTICE '  Datastreams: % records', datastream_count;
+    RAISE NOTICE '  Scenes: % records', scene_count;
     RAISE NOTICE '  Pipelines: % records', pipeline_count;
     RAISE NOTICE '  Pipeline Data: % records', pipelinedata_count;
     RAISE NOTICE '  Pipeline States (Jobs): % records', pipelinestate_count;

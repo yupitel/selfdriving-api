@@ -52,9 +52,7 @@ class MeasurementService:
     
     async def get_measurements(
         self,
-        filter_params: MeasurementFilter,
-        skip: int = 0,
-        limit: int = 20
+        filter_params: MeasurementFilter
     ) -> tuple[List[MeasurementModel], int]:
         """Get measurements with filtering and pagination"""
         # Build query
@@ -66,10 +64,24 @@ class MeasurementService:
             conditions.append(MeasurementModel.vehicle_id == filter_params.vehicle_id)
         if filter_params.area_id:
             conditions.append(MeasurementModel.area_id == filter_params.area_id)
+        if filter_params.driver_id:
+            conditions.append(MeasurementModel.driver_id == filter_params.driver_id)
         if filter_params.start_time:
             conditions.append(MeasurementModel.local_time >= filter_params.start_time)
         if filter_params.end_time:
             conditions.append(MeasurementModel.local_time <= filter_params.end_time)
+        if filter_params.weather_condition:
+            conditions.append(MeasurementModel.weather_condition == filter_params.weather_condition)
+        if filter_params.road_condition:
+            conditions.append(MeasurementModel.road_condition == filter_params.road_condition)
+        if filter_params.min_distance:
+            conditions.append(MeasurementModel.distance >= filter_params.min_distance)
+        if filter_params.max_distance:
+            conditions.append(MeasurementModel.distance <= filter_params.max_distance)
+        if filter_params.min_duration:
+            conditions.append(MeasurementModel.duration >= filter_params.min_duration)
+        if filter_params.max_duration:
+            conditions.append(MeasurementModel.duration <= filter_params.max_duration)
         
         if conditions:
             statement = statement.where(and_(*conditions))
@@ -81,7 +93,7 @@ class MeasurementService:
         total = len(self.session.exec(count_statement).all())
         
         # Apply pagination
-        statement = statement.offset(skip).limit(limit)
+        statement = statement.offset(filter_params.offset).limit(filter_params.limit)
         
         # Execute query
         result = self.session.exec(statement)

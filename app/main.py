@@ -8,7 +8,7 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.cores.db_init import initialize_database, get_db_mode
-from app.routers import measurements, datastreams, vehicles, pipelines, health
+from app.routers import measurements, datastreams, vehicles, pipelines, drivers, health
 from app.schemas.base import BaseResponse
 
 # Configure logging
@@ -116,6 +116,7 @@ app.include_router(measurements.router)
 app.include_router(datastreams.router)
 app.include_router(vehicles.router)
 app.include_router(pipelines.router)
+app.include_router(drivers.router)
 
 
 # Root endpoint
@@ -132,7 +133,8 @@ async def root():
                 "measurements": "/api/v1/measurements",
                 "datastreams": "/api/v1/datastreams",
                 "vehicles": "/api/v1/vehicles",
-                "pipelines": "/api/v1/pipelines"
+                "pipelines": "/api/v1/pipelines",
+                "drivers": "/api/v1/drivers"
             }
         }
     )

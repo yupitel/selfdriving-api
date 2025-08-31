@@ -11,6 +11,14 @@ class DataStreamBase(BaseModel):
     name: Optional[str] = Field(None, max_length=255, description="Name of the datastream")
     data_path: Optional[str] = Field(None, max_length=500, description="Path to the data file")
     src_path: Optional[str] = Field(None, max_length=500, description="Source path of the data")
+    sequence_number: Optional[int] = Field(None, ge=1, description="Sequence number within measurement")
+    start_time: Optional[datetime] = Field(None, description="Start time of this segment")
+    end_time: Optional[datetime] = Field(None, description="End time of this segment")
+    duration: Optional[int] = Field(None, ge=0, description="Duration in milliseconds")
+    video_url: Optional[str] = Field(None, description="URL to video file for this segment")
+    has_data_loss: bool = Field(False, description="Whether data loss occurred in this segment")
+    data_loss_duration: Optional[int] = Field(None, ge=0, description="Duration of data loss in milliseconds")
+    processing_status: int = Field(0, ge=0, le=3, description="Processing status (0=PENDING, 1=PROCESSING, 2=COMPLETED, 3=FAILED)")
 
 
 class DataStreamCreate(DataStreamBase):
@@ -25,6 +33,14 @@ class DataStreamUpdate(BaseModel):
     name: Optional[str] = Field(None, max_length=255, description="Name of the datastream")
     data_path: Optional[str] = Field(None, max_length=500, description="Path to the data file")
     src_path: Optional[str] = Field(None, max_length=500, description="Source path of the data")
+    sequence_number: Optional[int] = Field(None, ge=1, description="Sequence number within measurement")
+    start_time: Optional[datetime] = Field(None, description="Start time of this segment")
+    end_time: Optional[datetime] = Field(None, description="End time of this segment")
+    duration: Optional[int] = Field(None, ge=0, description="Duration in milliseconds")
+    video_url: Optional[str] = Field(None, description="URL to video file for this segment")
+    has_data_loss: Optional[bool] = Field(None, description="Whether data loss occurred in this segment")
+    data_loss_duration: Optional[int] = Field(None, ge=0, description="Duration of data loss in milliseconds")
+    processing_status: Optional[int] = Field(None, ge=0, le=3, description="Processing status (0=PENDING, 1=PROCESSING, 2=COMPLETED, 3=FAILED)")
 
 
 class DataStreamResponse(DataStreamBase):
@@ -43,6 +59,11 @@ class DataStreamFilter(BaseModel):
     name: Optional[str] = Field(None, description="Filter by name (partial match)")
     data_path: Optional[str] = Field(None, description="Filter by data path (partial match)")
     src_path: Optional[str] = Field(None, description="Filter by source path (partial match)")
+    sequence_number: Optional[int] = Field(None, ge=1, description="Filter by sequence number")
+    processing_status: Optional[int] = Field(None, ge=0, le=3, description="Filter by processing status")
+    has_data_loss: Optional[bool] = Field(None, description="Filter by data loss flag")
+    segment_start_time: Optional[datetime] = Field(None, description="Filter by segment start time (after)")
+    segment_end_time: Optional[datetime] = Field(None, description="Filter by segment end time (before)")
     start_time: Optional[datetime] = Field(None, description="Filter by creation time (after)")
     end_time: Optional[datetime] = Field(None, description="Filter by creation time (before)")
     limit: int = Field(100, gt=0, le=1000, description="Maximum number of results")
@@ -101,3 +122,27 @@ class DataStreamTypeEnum:
     def is_valid(cls, type_value: int) -> bool:
         """Check if a type value is valid"""
         return 0 <= type_value <= 32767
+
+
+class ProcessingStatusEnum:
+    """Enumeration of processing statuses"""
+    PENDING = 0
+    PROCESSING = 1
+    COMPLETED = 2
+    FAILED = 3
+    
+    @classmethod
+    def get_name(cls, status_value: int) -> str:
+        """Get the name of a processing status"""
+        status_map = {
+            0: "PENDING",
+            1: "PROCESSING", 
+            2: "COMPLETED",
+            3: "FAILED"
+        }
+        return status_map.get(status_value, "UNKNOWN")
+    
+    @classmethod
+    def is_valid(cls, status_value: int) -> bool:
+        """Check if a status value is valid"""
+        return 0 <= status_value <= 3

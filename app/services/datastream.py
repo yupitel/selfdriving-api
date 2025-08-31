@@ -97,6 +97,21 @@ class DataStreamService:
             if filters.src_path:
                 conditions.append(DataStreamModel.src_path.contains(filters.src_path))
             
+            if filters.sequence_number is not None:
+                conditions.append(DataStreamModel.sequence_number == filters.sequence_number)
+            
+            if filters.processing_status is not None:
+                conditions.append(DataStreamModel.processing_status == filters.processing_status)
+            
+            if filters.has_data_loss is not None:
+                conditions.append(DataStreamModel.has_data_loss == filters.has_data_loss)
+            
+            if filters.segment_start_time:
+                conditions.append(DataStreamModel.start_time >= filters.segment_start_time)
+            
+            if filters.segment_end_time:
+                conditions.append(DataStreamModel.end_time <= filters.segment_end_time)
+            
             if filters.start_time:
                 conditions.append(DataStreamModel.created_at >= filters.start_time)
             

@@ -7,7 +7,7 @@ from app.cores.tablename import DRIVER
 from app.models.base import BaseSQLModel
 
 from sqlmodel import Field, Column
-from sqlalchemy import DECIMAL, SmallInteger, Integer, Boolean, Date
+from sqlalchemy import DECIMAL, SmallInteger, Integer, Boolean, Date, Text
 
 class DriverModel(BaseSQLModel, table=True):
     __tablename__ = DRIVER
@@ -54,4 +54,4 @@ class DriverModel(BaseSQLModel, table=True):
     
     # Metadata
     notes: Optional[str] = Field(default=None, nullable=True)
-    metadata: Optional[str] = Field(default=None, nullable=True)  # JSON string
+    extra_metadata: Optional[str] = Field(default=None, sa_column=Column("metadata", Text, nullable=True))  # JSON string

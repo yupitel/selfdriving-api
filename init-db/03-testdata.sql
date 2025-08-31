@@ -443,17 +443,20 @@ ON CONFLICT (id) DO NOTHING;
 DO $$
 DECLARE
     vehicle_count INTEGER;
+    driver_count INTEGER;
     measurement_count INTEGER;
     datastream_count INTEGER;
     pipeline_count INTEGER;
 BEGIN
     SELECT COUNT(*) INTO vehicle_count FROM vehicle WHERE name LIKE 'TEST-%';
+    SELECT COUNT(*) INTO driver_count FROM driver;
     SELECT COUNT(*) INTO measurement_count FROM measurement;
     SELECT COUNT(*) INTO datastream_count FROM datastream;
     SELECT COUNT(*) INTO pipeline_count FROM pipeline;
     
     RAISE NOTICE 'Test data insertion complete:';
     RAISE NOTICE '  Vehicles: % records', vehicle_count;
+    RAISE NOTICE '  Drivers: % records', driver_count;
     RAISE NOTICE '  Measurements: % records', measurement_count;
     RAISE NOTICE '  Datastreams: % records', datastream_count;
     RAISE NOTICE '  Pipelines: % records', pipeline_count;

@@ -21,14 +21,9 @@ router = APIRouter(
     prefix="/api/v1/pipelinedependencies",
     tags=["Pipeline Dependencies"]
 )
-legacy_router = APIRouter(
-    prefix="/api/v1/pipelinedependency",
-    tags=["Pipeline Dependency (legacy)"]
-)
 
 
 @router.post("/", response_model=BaseResponse[PipelineDependencyResponse], status_code=status.HTTP_201_CREATED)
-@legacy_router.post("/", response_model=BaseResponse[PipelineDependencyResponse], status_code=status.HTTP_201_CREATED)
 async def create_pipeline_dependency(
     dependency: PipelineDependencyCreate,
     session: Session = Depends(get_session)
@@ -51,7 +46,6 @@ async def create_pipeline_dependency(
 
 
 @router.get("/{dependency_id}", response_model=BaseResponse[PipelineDependencyResponse])
-@legacy_router.get("/{dependency_id}", response_model=BaseResponse[PipelineDependencyResponse])
 async def get_pipeline_dependency(
     dependency_id: UUID,
     session: Session = Depends(get_session)
@@ -73,7 +67,6 @@ async def get_pipeline_dependency(
 
 
 @router.get("/{dependency_id}/detail", response_model=BaseResponse[PipelineDependencyDetailResponse])
-@legacy_router.get("/{dependency_id}/detail", response_model=BaseResponse[PipelineDependencyDetailResponse])
 async def get_pipeline_dependency_detail(
     dependency_id: UUID,
     session: Session = Depends(get_session)
@@ -95,7 +88,6 @@ async def get_pipeline_dependency_detail(
 
 
 @router.get("/", response_model=PipelineDependencyListResponse)
-@legacy_router.get("/", response_model=PipelineDependencyListResponse)
 async def get_pipeline_dependencies(
     parent_id: Optional[UUID] = Query(None, description="Filter by parent pipeline state ID"),
     child_id: Optional[UUID] = Query(None, description="Filter by child pipeline state ID"),
@@ -129,7 +121,6 @@ async def get_pipeline_dependencies(
 
 
 @router.put("/{dependency_id}", response_model=BaseResponse[PipelineDependencyResponse])
-@legacy_router.put("/{dependency_id}", response_model=BaseResponse[PipelineDependencyResponse])
 async def update_pipeline_dependency(
     dependency_id: UUID,
     dependency_update: PipelineDependencyUpdate,
@@ -159,7 +150,6 @@ async def update_pipeline_dependency(
 
 
 @router.delete("/{dependency_id}", response_model=BaseResponse[None])
-@legacy_router.delete("/{dependency_id}", response_model=BaseResponse[None])
 async def delete_pipeline_dependency(
     dependency_id: UUID,
     session: Session = Depends(get_session)
@@ -187,7 +177,6 @@ async def delete_pipeline_dependency(
 
 
 @router.post("/bulk", response_model=BaseResponse[list[PipelineDependencyResponse]], status_code=status.HTTP_201_CREATED)
-@legacy_router.post("/bulk", response_model=BaseResponse[list[PipelineDependencyResponse]], status_code=status.HTTP_201_CREATED)
 async def bulk_create_pipeline_dependencies(
     bulk_data: PipelineDependencyBulkCreate,
     session: Session = Depends(get_session)
@@ -220,7 +209,6 @@ async def bulk_create_pipeline_dependencies(
 
 # Specialized dependency management endpoints
 @router.get("/parent/{parent_id}/children", response_model=BaseResponse[list[PipelineDependencyResponse]])
-@legacy_router.get("/parent/{parent_id}/children", response_model=BaseResponse[list[PipelineDependencyResponse]])
 async def get_dependencies_for_parent(
     parent_id: UUID,
     session: Session = Depends(get_session)
@@ -241,7 +229,6 @@ async def get_dependencies_for_parent(
 
 
 @router.get("/child/{child_id}/parents", response_model=BaseResponse[list[PipelineDependencyResponse]])
-@legacy_router.get("/child/{child_id}/parents", response_model=BaseResponse[list[PipelineDependencyResponse]])
 async def get_dependencies_for_child(
     child_id: UUID,
     session: Session = Depends(get_session)
@@ -262,7 +249,6 @@ async def get_dependencies_for_child(
 
 
 @router.get("/chain/{pipeline_state_id}", response_model=BaseResponse[list[PipelineDependencyResponse]])
-@legacy_router.get("/chain/{pipeline_state_id}", response_model=BaseResponse[list[PipelineDependencyResponse]])
 async def get_dependency_chain(
     pipeline_state_id: UUID,
     session: Session = Depends(get_session)

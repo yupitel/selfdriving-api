@@ -49,7 +49,7 @@ ON CONFLICT (id) DO NOTHING;
 -- 2. DRIVER TEST DATA
 -- =====================================================
 -- Insert test drivers with various certification levels and statuses
-INSERT INTO driver (id, created_at, updated_at, driver_code, email, name, name_kana, 
+INSERT INTO driver (id, created_at, updated_at, email, name, name_kana, 
     license_number, license_type, license_expiry_date, 
     certification_level, certification_date, training_completed_date,
     status, employment_type, department, team, supervisor_id,
@@ -59,7 +59,7 @@ INSERT INTO driver (id, created_at, updated_at, driver_code, email, name, name_k
 VALUES
     -- Expert drivers
     ('d1111111-1111-1111-1111-111111111111', EXTRACT(EPOCH FROM NOW() - INTERVAL '2 years')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT,
-     'DRV-001', 'tanaka.taro@example.com', 'Tanaka Taro', 'タナカ タロウ',
+     'tanaka.taro@example.com', 'Tanaka Taro', 'タナカ タロウ',
      '123456789012', 'Large Vehicle', '2026-05-15',
      3, '2022-06-01', '2022-03-01',  -- EXPERT level
      1, 0, 'Operations', 'Team A', NULL,  -- ACTIVE, FULL_TIME, no supervisor
@@ -70,7 +70,7 @@ VALUES
     
     -- Advanced drivers
     ('d1111111-1111-1111-1111-111111111112', EXTRACT(EPOCH FROM NOW() - INTERVAL '1 year')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT,
-     'DRV-002', 'yamada.hanako@example.com', 'Yamada Hanako', 'ヤマダ ハナコ',
+     'yamada.hanako@example.com', 'Yamada Hanako', 'ヤマダ ハナコ',
      '234567890123', 'Standard', '2025-08-20',
      2, '2023-09-15', '2023-06-01',  -- ADVANCED level
      1, 0, 'Operations', 'Team A', 'd1111111-1111-1111-1111-111111111111',  -- Reports to Tanaka
@@ -80,7 +80,7 @@ VALUES
      '{"languages": ["jp"], "special_qualifications": ["highway"]}'),
     
     ('d1111111-1111-1111-1111-111111111113', EXTRACT(EPOCH FROM NOW() - INTERVAL '18 months')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT,
-     'DRV-003', 'suzuki.ichiro@example.com', 'Suzuki Ichiro', 'スズキ イチロウ',
+     'suzuki.ichiro@example.com', 'Suzuki Ichiro', 'スズキ イチロウ',
      '345678901234', 'Large Vehicle', '2027-03-10',
      2, '2023-03-20', '2022-12-01',  -- ADVANCED level
      1, 1, 'Operations', 'Team B', NULL,  -- ACTIVE, CONTRACT
@@ -91,7 +91,7 @@ VALUES
     
     -- Basic drivers
     ('d1111111-1111-1111-1111-111111111114', EXTRACT(EPOCH FROM NOW() - INTERVAL '8 months')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT,
-     'DRV-004', 'sato.jiro@example.com', 'Sato Jiro', 'サトウ ジロウ',
+     'sato.jiro@example.com', 'Sato Jiro', 'サトウ ジロウ',
      '456789012345', 'Standard', '2025-11-30',
      1, '2024-03-01', '2024-01-15',  -- BASIC level
      1, 0, 'Operations', 'Team B', 'd1111111-1111-1111-1111-111111111113',  -- Reports to Suzuki
@@ -101,7 +101,7 @@ VALUES
      '{"languages": ["jp"]}'),
     
     ('d1111111-1111-1111-1111-111111111115', EXTRACT(EPOCH FROM NOW() - INTERVAL '6 months')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT,
-     'DRV-005', 'takahashi.yuki@example.com', 'Takahashi Yuki', 'タカハシ ユキ',
+     'takahashi.yuki@example.com', 'Takahashi Yuki', 'タカハシ ユキ',
      '567890123456', 'Standard', '2026-02-28',
      1, '2024-05-10', '2024-03-01',  -- BASIC level
      1, 2, 'Operations', 'Team C', NULL,  -- ACTIVE, PART_TIME
@@ -112,7 +112,7 @@ VALUES
     
     -- Trainee drivers
     ('d1111111-1111-1111-1111-111111111116', EXTRACT(EPOCH FROM NOW() - INTERVAL '3 months')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT,
-     'DRV-006', 'ito.kenji@example.com', 'Ito Kenji', 'イトウ ケンジ',
+     'ito.kenji@example.com', 'Ito Kenji', 'イトウ ケンジ',
      '678901234567', 'Standard', '2024-12-15',
      0, NULL, NULL,  -- TRAINEE level, not yet certified
      1, 0, 'Training', 'Training Group', 'd1111111-1111-1111-1111-111111111111',  -- Under Tanaka's supervision

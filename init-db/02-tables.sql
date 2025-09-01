@@ -189,7 +189,6 @@ CREATE TABLE IF NOT EXISTS driver (
     updated_at BIGINT NOT NULL,
     
     -- Driver identification
-    driver_code TEXT NOT NULL UNIQUE,
     email TEXT UNIQUE,
     name TEXT NOT NULL,
     name_kana TEXT,
@@ -239,7 +238,6 @@ CREATE TABLE IF NOT EXISTS driver (
 );
 
 -- Create indexes for driver table
-CREATE INDEX IF NOT EXISTS idx_driver_driver_code ON driver(driver_code);
 CREATE INDEX IF NOT EXISTS idx_driver_email ON driver(email);
 CREATE INDEX IF NOT EXISTS idx_driver_name ON driver(name);
 CREATE INDEX IF NOT EXISTS idx_driver_status ON driver(status);
@@ -255,7 +253,6 @@ COMMENT ON TABLE driver IS 'Driver information for self-driving vehicle operator
 COMMENT ON COLUMN driver.id IS 'Unique identifier for the driver';
 COMMENT ON COLUMN driver.created_at IS 'Unix timestamp when the record was created';
 COMMENT ON COLUMN driver.updated_at IS 'Unix timestamp when the record was last updated';
-COMMENT ON COLUMN driver.driver_code IS 'Unique driver code or employee number';
 COMMENT ON COLUMN driver.email IS 'Driver email address';
 COMMENT ON COLUMN driver.name IS 'Full name of the driver';
 COMMENT ON COLUMN driver.name_kana IS 'Name in Katakana (for Japanese names)';

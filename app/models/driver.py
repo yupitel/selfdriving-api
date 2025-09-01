@@ -13,7 +13,6 @@ class DriverModel(BaseSQLModel, table=True):
     __tablename__ = DRIVER
     
     # Driver identification
-    driver_code: str = Field(..., nullable=False, unique=True)
     email: Optional[str] = Field(default=None, nullable=True, unique=True)
     name: str = Field(..., nullable=False)
     name_kana: Optional[str] = Field(default=None, nullable=True)

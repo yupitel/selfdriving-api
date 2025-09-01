@@ -34,11 +34,6 @@ class DriverService:
     async def create_driver(self, driver_data: DriverCreate) -> DriverModel:
         """Create a new driver"""
         try:
-            # Check if driver_code already exists
-            existing_driver = await self.get_driver_by_code(driver_data.driver_code)
-            if existing_driver:
-                raise ConflictException(f"Driver with code '{driver_data.driver_code}' already exists")
-            
             # Check if email already exists (if provided)
             if driver_data.email:
                 existing_email = await self.get_driver_by_email(driver_data.email)
@@ -46,7 +41,8 @@ class DriverService:
                     raise ConflictException(f"Driver with email '{driver_data.email}' already exists")
             
             # Create driver instance
-            driver = DriverModel(**driver_data.model_dump())
+            payload = driver_data.model_dump()
+            driver = DriverModel(**payload)
             
             # Add to session and commit
             self.session.add(driver)
@@ -81,16 +77,6 @@ class DriverService:
             logger.error(f"Database error fetching driver {driver_id}: {str(e)}")
             raise InternalServerException(f"Failed to fetch driver: {str(e)}")
     
-    async def get_driver_by_code(self, driver_code: str) -> Optional[DriverModel]:
-        """Get a driver by driver code"""
-        try:
-            statement = select(DriverModel).where(DriverModel.driver_code == driver_code)
-            driver = self.session.exec(statement).first()
-            return driver
-            
-        except SQLAlchemyError as e:
-            logger.error(f"Database error fetching driver by code {driver_code}: {str(e)}")
-            raise InternalServerException(f"Failed to fetch driver: {str(e)}")
     
     
     async def list_drivers(self, filters: DriverFilter) -> tuple[List[DriverModel], int]:
@@ -101,8 +87,6 @@ class DriverService:
             # Build filter conditions
             conditions = []
             
-            if filters.driver_code:
-                conditions.append(DriverModel.driver_code == filters.driver_code)
             
             if filters.email:
                 conditions.append(DriverModel.email == filters.email)
@@ -246,16 +230,6 @@ class DriverService:
         try:
             for idx, driver_data in enumerate(bulk_data.drivers):
                 try:
-                    # Check for duplicates
-                    existing_driver = await self.get_driver_by_code(driver_data.driver_code)
-                    if existing_driver:
-                        errors.append({
-                            "index": idx,
-                            "error": f"Driver code '{driver_data.driver_code}' already exists",
-                            "data": driver_data.model_dump()
-                        })
-                        continue
-                    
                     if driver_data.email:
                         existing_email = await self.get_driver_by_email(driver_data.email)
                         if existing_email:
@@ -267,7 +241,8 @@ class DriverService:
                             continue
                     
                     # Create driver
-                    driver = DriverModel(**driver_data.model_dump())
+                    payload = driver_data.model_dump()
+                    driver = DriverModel(**payload)
                     self.session.add(driver)
                     self.session.flush()  # Flush to get ID without committing
                     created_ids.append(driver.id)

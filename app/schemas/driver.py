@@ -7,7 +7,6 @@ from pydantic import BaseModel, Field, ConfigDict
 
 class DriverBase(BaseModel):
     """Base schema for Driver"""
-    driver_code: str = Field(..., min_length=1, max_length=50, description="Unique driver code or employee number")
     email: Optional[str] = Field(None, description="Driver email address")
     name: str = Field(..., min_length=1, max_length=100, description="Full name of the driver")
     name_kana: Optional[str] = Field(None, max_length=100, description="Name in Katakana")
@@ -54,7 +53,6 @@ class DriverBase(BaseModel):
 class DriverCreate(DriverBase):
     """Schema for creating a new Driver"""
     # Override some fields to make them required for creation
-    driver_code: str = Field(..., min_length=1, max_length=50, description="Unique driver code or employee number")
     name: str = Field(..., min_length=1, max_length=100, description="Full name of the driver")
     
     # Don't allow setting statistics on creation
@@ -111,7 +109,6 @@ class DriverResponse(DriverBase):
 
 class DriverFilter(BaseModel):
     """Schema for filtering Drivers"""
-    driver_code: Optional[str] = Field(None, description="Filter by driver code (exact match)")
     email: Optional[str] = Field(None, description="Filter by email (exact match)")
     name: Optional[str] = Field(None, description="Filter by name (partial match)")
     certification_level: Optional[int] = Field(None, ge=0, le=3, description="Filter by certification level")

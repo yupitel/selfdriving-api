@@ -43,7 +43,6 @@ async def create_driver(
 
 @router.get("/", response_model=List[DriverResponse])
 async def list_drivers(
-    driver_code: str = Query(None, description="Filter by driver code"),
     email: str = Query(None, description="Filter by email"),
     name: str = Query(None, description="Filter by name (partial match)"),
     certification_level: int = Query(None, ge=0, le=3, description="Filter by certification level"),
@@ -60,7 +59,6 @@ async def list_drivers(
     service = DriverService(session)
     try:
         filters = DriverFilter(
-            driver_code=driver_code,
             email=email,
             name=name,
             certification_level=certification_level,
@@ -144,22 +142,6 @@ async def bulk_create_drivers(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/code/{driver_code}", response_model=DriverResponse)
-async def get_driver_by_code(
-    driver_code: str,
-    session: Session = Depends(get_session)
-):
-    """Get a driver by driver code"""
-    service = DriverService(session)
-    try:
-        driver = await service.get_driver_by_code(driver_code)
-        if not driver:
-            raise NotFoundException(f"Driver with code '{driver_code}' not found")
-        return driver
-    except NotFoundException as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except InternalServerException as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/supervisor/{supervisor_id}/subordinates", response_model=List[DriverResponse])

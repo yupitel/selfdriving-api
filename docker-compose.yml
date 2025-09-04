@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   postgres:
@@ -11,7 +11,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init-db:/docker-entrypoint-initdb.d:ro  # SQL初期化スクリプト
+      - ./init-db:/docker-entrypoint-initdb.d:ro # SQL初期化スクリプト
     networks:
       - selfdriving-network
     healthcheck:
@@ -27,7 +27,7 @@ services:
       - "8000:8000"
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/selfdriving
-      DB_MODE: development  # development mode for auto-creation
+      DB_MODE: development # development mode for auto-creation
       BULK_INSERT_MAX_NUM: 1000
     depends_on:
       postgres:

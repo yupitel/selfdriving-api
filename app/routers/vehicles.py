@@ -51,7 +51,7 @@ async def create_vehicles(
     """
     try:
         service = VehicleService(session)
-        result = await service.bulk_create_vehicles(bulk_data)
+        result = await service.create_vehicles(bulk_data)
         return VehicleBulkResponse(**result)
     except BadRequestException as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -251,4 +251,3 @@ async def delete_vehicle(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete vehicle: {str(e)}"
         )
-

@@ -32,7 +32,7 @@ async def create_drivers(
     """Bulk create drivers"""
     service = DriverService(session)
     try:
-        result = await service.bulk_create_drivers(bulk_data)
+        result = await service.create_drivers(bulk_data)
         return result
     except (BadRequestException, ConflictException) as e:
         raise HTTPException(status_code=400, detail=str(e))

@@ -29,7 +29,7 @@ async def create_pipeline_data(
     """Bulk create pipeline data entries"""
     try:
         service = PipelineDataService(session)
-        pipeline_data_entries = await service.bulk_create_pipeline_data(bulk_data)
+        pipeline_data_entries = await service.create_pipeline_data(bulk_data)
 
         pipeline_data_responses = [
             PipelineDataResponse.model_validate(pd) for pd in pipeline_data_entries
@@ -164,4 +164,3 @@ async def delete_pipeline_data(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
-

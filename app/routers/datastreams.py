@@ -50,7 +50,7 @@ async def create_datastreams(
     """
     try:
         service = DataStreamService(session)
-        result = await service.bulk_create_datastreams(bulk_data)
+        result = await service.create_datastreams(bulk_data)
         return DataStreamBulkResponse(**result)
     except BadRequestException as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -228,4 +228,3 @@ async def delete_datastream(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete datastream: {str(e)}"
         )
-

@@ -31,7 +31,7 @@ async def create_measurements(
     """Bulk create measurements"""
     try:
         service = MeasurementService(session)
-        measurements = await service.bulk_create_measurements(bulk_data)
+        measurements = await service.create_measurements(bulk_data)
 
         measurement_responses = [
             MeasurementResponse.model_validate(m) for m in measurements
@@ -187,4 +187,3 @@ async def delete_measurement(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
-

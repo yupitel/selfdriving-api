@@ -119,7 +119,7 @@ class PipelineDataService:
             logger.error(f"Error deleting pipeline data: {str(e)}")
             raise
     
-    async def bulk_create_pipeline_data(self, bulk_data: PipelineDataBulkCreate) -> List[PipelineDataModel]:
+    async def create_pipeline_data(self, bulk_data: PipelineDataBulkCreate) -> List[PipelineDataModel]:
         """Bulk create pipeline data entries"""
         if len(bulk_data.pipeline_data) > BULK_INSERT_MAX_NUM:
             raise ValueError(f"Bulk insert limit exceeded. Maximum {BULK_INSERT_MAX_NUM} items allowed.")

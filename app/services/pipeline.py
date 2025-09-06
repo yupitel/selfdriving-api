@@ -157,7 +157,7 @@ class PipelineService:
             logger.error(f"Database error deleting pipeline {pipeline_id}: {str(e)}")
             raise InternalServerException(f"Failed to delete pipeline: {str(e)}")
     
-    async def bulk_create_pipelines(
+    async def create_pipelines(
         self, 
         bulk_data: PipelineBulkCreate
     ) -> dict:

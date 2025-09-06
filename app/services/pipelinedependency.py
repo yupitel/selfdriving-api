@@ -106,7 +106,7 @@ class PipelineDependencyService:
         self.session.commit()
         return True
 
-    async def bulk_create_pipeline_dependencies(
+    async def create_pipeline_dependencies(
         self, bulk_data: PipelineDependencyBulkCreate
     ) -> List[PipelineDependencyModel]:
         if not bulk_data.dependencies:

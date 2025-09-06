@@ -51,7 +51,7 @@ async def create_pipelines(
     """
     try:
         service = PipelineService(session)
-        result = await service.bulk_create_pipelines(bulk_data)
+        result = await service.create_pipelines(bulk_data)
         return PipelineBulkResponse(**result)
     except BadRequestException as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

@@ -122,7 +122,7 @@ VALUES
      '{"languages": ["jp"], "training_progress": 65}'),
     
     ('d1111111-1111-1111-1111-111111111117', EXTRACT(EPOCH FROM NOW() - INTERVAL '1 month')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT,
-     'DRV-007', 'watanabe.mari@example.com', 'Watanabe Mari', 'ワタナベ マリ',
+     'watanabe.mari@example.com', 'Watanabe Mari', 'ワタナベ マリ',
      '789012345678', 'Standard', '2025-06-30',
      0, NULL, NULL,  -- TRAINEE level
      0, 3, 'Training', 'Training Group', 'd1111111-1111-1111-1111-111111111112',  -- Under Yamada's supervision
@@ -133,7 +133,7 @@ VALUES
     
     -- Inactive/On leave drivers
     ('d1111111-1111-1111-1111-111111111118', EXTRACT(EPOCH FROM NOW() - INTERVAL '2 years')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT,
-     'DRV-008', 'nakamura.shin@example.com', 'Nakamura Shin', 'ナカムラ シン',
+     'nakamura.shin@example.com', 'Nakamura Shin', 'ナカムラ シン',
      '890123456789', 'Large Vehicle', '2024-09-20',
      2, '2022-12-01', '2022-09-01',  -- ADVANCED level
      2, 0, 'Operations', 'Team A', 'd1111111-1111-1111-1111-111111111111',  -- ON_LEAVE
@@ -144,7 +144,7 @@ VALUES
     
     -- Retired driver
     ('d1111111-1111-1111-1111-111111111119', EXTRACT(EPOCH FROM NOW() - INTERVAL '3 years')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT,
-     'DRV-009', 'kobayashi.retired@example.com', 'Kobayashi Takeshi', 'コバヤシ タケシ',
+     'kobayashi.retired@example.com', 'Kobayashi Takeshi', 'コバヤシ タケシ',
      '901234567890', 'Large Vehicle', '2023-12-31',
      3, '2021-01-15', '2020-10-01',  -- EXPERT level
      3, 0, 'Operations', 'Team A', NULL,  -- RETIRED
@@ -155,7 +155,7 @@ VALUES
     
     -- Driver without scores (new)
     ('d1111111-1111-1111-1111-111111111120', EXTRACT(EPOCH FROM NOW() - INTERVAL '1 week')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT,
-     'DRV-010', 'yoshida.new@example.com', 'Yoshida Kazuya', 'ヨシダ カズヤ',
+     'yoshida.new@example.com', 'Yoshida Kazuya', 'ヨシダ カズヤ',
      '012345678901', 'Standard', '2026-07-15',
      0, NULL, NULL,  -- TRAINEE level
      1, 0, 'Training', 'Training Group', 'd1111111-1111-1111-1111-111111111113',

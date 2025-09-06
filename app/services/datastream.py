@@ -167,7 +167,7 @@ class DataStreamService:
             logger.error(f"Database error deleting datastream {datastream_id}: {str(e)}")
             raise InternalServerException(f"Failed to delete datastream: {str(e)}")
     
-    async def bulk_create_datastreams(
+    async def create_datastreams(
         self, 
         bulk_data: DataStreamBulkCreate
     ) -> dict:

@@ -132,7 +132,7 @@ class MeasurementService:
             logger.error(f"Error deleting measurement: {str(e)}")
             raise
     
-    async def bulk_create_measurements(
+    async def create_measurements(
         self,
         bulk_data: MeasurementBulkCreate
     ) -> List[MeasurementModel]:

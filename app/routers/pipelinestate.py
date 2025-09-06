@@ -30,7 +30,7 @@ async def create_pipeline_states(
     """Bulk create pipeline state entries"""
     try:
         service = PipelineStateService(session)
-        pipeline_state_entries = await service.bulk_create_pipeline_states(bulk_data)
+        pipeline_state_entries = await service.create_pipeline_states(bulk_data)
 
         pipeline_state_responses = [
             PipelineStateResponse.model_validate(ps) for ps in pipeline_state_entries

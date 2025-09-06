@@ -147,7 +147,7 @@ class VehicleService:
             logger.error(f"Database error deleting vehicle {vehicle_id}: {str(e)}")
             raise InternalServerException(f"Failed to delete vehicle: {str(e)}")
     
-    async def bulk_create_vehicles(
+    async def create_vehicles(
         self, 
         bulk_data: VehicleBulkCreate
     ) -> dict:

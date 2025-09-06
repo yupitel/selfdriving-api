@@ -30,7 +30,7 @@ async def create_pipeline_dependencies(
     """Bulk create pipeline dependencies"""
     try:
         service = PipelineDependencyService(session)
-        dependencies = await service.bulk_create_pipeline_dependencies(bulk_data)
+        dependencies = await service.create_pipeline_dependencies(bulk_data)
 
         dependency_responses = [
             PipelineDependencyResponse.model_validate(dep) for dep in dependencies

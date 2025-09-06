@@ -184,7 +184,7 @@ class DriverService:
             logger.error(f"Database error deleting driver {driver_id}: {str(e)}")
             raise InternalServerException(f"Failed to delete driver: {str(e)}")
     
-    async def bulk_create_drivers(
+    async def create_drivers(
         self, 
         bulk_data: DriverBulkCreate
     ) -> dict:

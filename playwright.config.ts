@@ -1,5 +1,14 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const webServerCfg = process.env.SKIP_WEBSERVER === "1"
+  ? undefined
+  : {
+      command: "cd /home/shunsuke/works/selfdriving/api && docker-compose up",
+      url: "http://localhost:8000/api/v1/health",
+      reuseExistingServer: !process.env.CI,
+      timeout: 120000,
+    } as const;
+
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: false,
@@ -25,10 +34,5 @@ export default defineConfig({
     },
   ],
 
-  webServer: {
-    command: "cd /home/shunsuke/works/selfdriving/api && docker-compose up",
-    url: "http://localhost:8000/api/v1/health",
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
-  },
+  webServer: webServerCfg as any,
 });

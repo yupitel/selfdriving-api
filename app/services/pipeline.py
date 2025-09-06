@@ -9,7 +9,6 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.models.pipeline import PipelineModel
 from app.schemas.pipeline import (
-    PipelineCreate,
     PipelineUpdate,
     PipelineFilter,
     PipelineBulkCreate,
@@ -32,33 +31,7 @@ class PipelineService:
     def __init__(self, db_session: Session):
         self.session = db_session
     
-    async def create_pipeline(self, pipeline_data: PipelineCreate) -> PipelineModel:
-        """Create a new pipeline"""
-        try:
-            # Validate pipeline type
-            if not PipelineTypeEnum.is_valid(pipeline_data.type):
-                raise BadRequestException(f"Invalid pipeline type: {pipeline_data.type}")
-            
-            # Create pipeline instance
-            pipeline = PipelineModel(**pipeline_data.model_dump())
-            
-            # Add to session and commit
-            self.session.add(pipeline)
-            self.session.commit()
-            self.session.refresh(pipeline)
-            
-            logger.info(f"Created pipeline with ID: {pipeline.id}")
-            return pipeline
-            
-        except IntegrityError as e:
-            self.session.rollback()
-            if "unique" in str(e).lower():
-                raise ConflictException(f"Pipeline with this configuration already exists")
-            raise ConflictException(f"Pipeline creation failed: {str(e)}")
-        except SQLAlchemyError as e:
-            self.session.rollback()
-            logger.error(f"Database error creating pipeline: {str(e)}")
-            raise InternalServerException(f"Failed to create pipeline: {str(e)}")
+    # Note: Single create is removed in favor of bulk-at-root API usage.
     
     async def get_pipeline(self, pipeline_id: UUID) -> PipelineModel:
         """Get a pipeline by ID"""

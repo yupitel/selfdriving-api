@@ -8,7 +8,6 @@ from sqlmodel import Session
 from app.cores.database import get_session
 from app.schemas.base import BaseResponse, PaginatedResponse
 from app.schemas.measurement import (
-    MeasurementCreate,
     MeasurementUpdate,
     MeasurementResponse,
     MeasurementListResponse,
@@ -24,20 +23,29 @@ router = APIRouter(
 )
 
 
-@router.post("/", response_model=BaseResponse[MeasurementResponse], status_code=status.HTTP_201_CREATED)
-async def create_measurement(
-    measurement_data: MeasurementCreate,
+@router.post("/", response_model=BaseResponse[list[MeasurementResponse]], status_code=status.HTTP_201_CREATED)
+async def create_measurements(
+    bulk_data: MeasurementBulkCreate,
     session: Session = Depends(get_session)
 ):
-    """Create a new measurement"""
+    """Bulk create measurements"""
     try:
         service = MeasurementService(session)
-        measurement = await service.create_measurement(measurement_data)
-        
+        measurements = await service.bulk_create_measurements(bulk_data)
+
+        measurement_responses = [
+            MeasurementResponse.model_validate(m) for m in measurements
+        ]
+
         return BaseResponse(
             success=True,
-            message="Measurement created successfully",
-            data=MeasurementResponse.model_validate(measurement)
+            message=f"Successfully created {len(measurements)} measurements",
+            data=measurement_responses
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
         )
     except Exception as e:
         raise HTTPException(
@@ -180,33 +188,3 @@ async def delete_measurement(
             detail=str(e)
         )
 
-
-@router.post("/bulk", response_model=BaseResponse[list[MeasurementResponse]], status_code=status.HTTP_201_CREATED)
-async def bulk_create_measurements(
-    bulk_data: MeasurementBulkCreate,
-    session: Session = Depends(get_session)
-):
-    """Bulk create measurements"""
-    try:
-        service = MeasurementService(session)
-        measurements = await service.bulk_create_measurements(bulk_data)
-        
-        measurement_responses = [
-            MeasurementResponse.model_validate(m) for m in measurements
-        ]
-        
-        return BaseResponse(
-            success=True,
-            message=f"Successfully created {len(measurements)} measurements",
-            data=measurement_responses
-        )
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )

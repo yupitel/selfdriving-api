@@ -7,7 +7,6 @@ from app.models.pipelinestate import PipelineStateModel
 from app.models.pipelinedata import PipelineDataModel
 from app.models.pipeline import PipelineModel
 from app.schemas.pipelinestate import (
-    PipelineStateCreate,
     PipelineStateUpdate,
     PipelineStateFilter,
     PipelineStateBulkCreate,
@@ -24,22 +23,7 @@ class PipelineStateService:
     def __init__(self, session: Session):
         self.session = session
     
-    async def create_pipeline_state(self, pipeline_state: PipelineStateCreate) -> PipelineStateModel:
-        """Create a new pipeline state entry"""
-        try:
-            state_entry = PipelineStateModel(
-                id=uuid4(),
-                **pipeline_state.model_dump()
-            )
-            self.session.add(state_entry)
-            self.session.commit()
-            self.session.refresh(state_entry)
-            logger.info(f"Created pipeline state with ID: {state_entry.id}")
-            return state_entry
-        except Exception as e:
-            self.session.rollback()
-            logger.error(f"Error creating pipeline state: {str(e)}")
-            raise
+    # Note: Single create is removed in favor of bulk-at-root API usage.
     
     async def get_pipeline_state(self, pipeline_state_id: UUID) -> Optional[PipelineStateModel]:
         """Get pipeline state by ID"""

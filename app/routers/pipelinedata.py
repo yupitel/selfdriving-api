@@ -7,7 +7,6 @@ from sqlmodel import Session
 from app.cores.database import get_session
 from app.schemas.base import BaseResponse
 from app.schemas.pipelinedata import (
-    PipelineDataCreate,
     PipelineDataUpdate,
     PipelineDataResponse,
     PipelineDataListResponse,
@@ -22,20 +21,29 @@ router = APIRouter(
 )
 
 
-@router.post("/", response_model=BaseResponse[PipelineDataResponse], status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=BaseResponse[list[PipelineDataResponse]], status_code=status.HTTP_201_CREATED)
 async def create_pipeline_data(
-    pipeline_data: PipelineDataCreate,
+    bulk_data: PipelineDataBulkCreate,
     session: Session = Depends(get_session)
 ):
-    """Create a new pipeline data entry"""
+    """Bulk create pipeline data entries"""
     try:
         service = PipelineDataService(session)
-        data_entry = await service.create_pipeline_data(pipeline_data)
-        
+        pipeline_data_entries = await service.bulk_create_pipeline_data(bulk_data)
+
+        pipeline_data_responses = [
+            PipelineDataResponse.model_validate(pd) for pd in pipeline_data_entries
+        ]
+
         return BaseResponse(
             success=True,
-            message="Pipeline data created successfully",
-            data=PipelineDataResponse.model_validate(data_entry)
+            message=f"Successfully created {len(pipeline_data_entries)} pipeline data entries",
+            data=pipeline_data_responses
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
         )
     except Exception as e:
         raise HTTPException(
@@ -157,33 +165,3 @@ async def delete_pipeline_data(
             detail=str(e)
         )
 
-
-@router.post("/bulk", response_model=BaseResponse[list[PipelineDataResponse]], status_code=status.HTTP_201_CREATED)
-async def bulk_create_pipeline_data(
-    bulk_data: PipelineDataBulkCreate,
-    session: Session = Depends(get_session)
-):
-    """Bulk create pipeline data entries"""
-    try:
-        service = PipelineDataService(session)
-        pipeline_data_entries = await service.bulk_create_pipeline_data(bulk_data)
-        
-        pipeline_data_responses = [
-            PipelineDataResponse.model_validate(pd) for pd in pipeline_data_entries
-        ]
-        
-        return BaseResponse(
-            success=True,
-            message=f"Successfully created {len(pipeline_data_entries)} pipeline data entries",
-            data=pipeline_data_responses
-        )
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )

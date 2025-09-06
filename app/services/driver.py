@@ -8,7 +8,6 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.models.driver import DriverModel
 from app.schemas.driver import (
-    DriverCreate,
     DriverUpdate,
     DriverFilter,
     DriverBulkCreate,
@@ -31,36 +30,7 @@ class DriverService:
     def __init__(self, db_session: Session):
         self.session = db_session
     
-    async def create_driver(self, driver_data: DriverCreate) -> DriverModel:
-        """Create a new driver"""
-        try:
-            # Check if email already exists (if provided)
-            if driver_data.email:
-                existing_email = await self.get_driver_by_email(driver_data.email)
-                if existing_email:
-                    raise ConflictException(f"Driver with email '{driver_data.email}' already exists")
-            
-            # Create driver instance
-            payload = driver_data.model_dump()
-            driver = DriverModel(**payload)
-            
-            # Add to session and commit
-            self.session.add(driver)
-            self.session.commit()
-            self.session.refresh(driver)
-            
-            logger.info(f"Created driver with ID: {driver.id}")
-            return driver
-            
-        except IntegrityError as e:
-            self.session.rollback()
-            if "unique" in str(e).lower():
-                raise ConflictException(f"Driver with this code or email already exists")
-            raise ConflictException(f"Driver creation failed: {str(e)}")
-        except SQLAlchemyError as e:
-            self.session.rollback()
-            logger.error(f"Database error creating driver: {str(e)}")
-            raise InternalServerException(f"Failed to create driver: {str(e)}")
+    # Note: Single create is removed in favor of bulk-at-root API usage.
     
     async def get_driver(self, driver_id: UUID) -> DriverModel:
         """Get a driver by ID"""

@@ -240,7 +240,7 @@
       "assertions": [
         {
           "description": "Bulk create datastreams",
-          "api": "/api/v1/datastreams/bulk",
+          "api": "/api/v1/datastreams/",
           "method": "POST",
           "input": {
             "datastreams": [
@@ -376,7 +376,7 @@
         },
         {
           "description": "Bulk create with empty list",
-          "api": "/api/v1/datastreams/bulk",
+          "api": "/api/v1/datastreams/",
           "method": "POST",
           "input": {
             "datastreams": []
@@ -387,7 +387,7 @@
         },
         {
           "description": "Bulk create with too many items",
-          "api": "/api/v1/datastreams/bulk",
+          "api": "/api/v1/datastreams/",
           "method": "POST",
           "input": {
             "datastreams": []

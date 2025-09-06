@@ -98,12 +98,27 @@ uvicorn app.main:app --reload
 
 | メソッド | エンドポイント | 説明 |
 |---------|--------------|------|
-| POST | `/api/v1/measurements/` | 測定データの作成 |
+| POST | `/api/v1/measurements/` | 測定データの作成（バルク、1件以上） |
 | GET | `/api/v1/measurements/` | 測定データ一覧の取得 |
 | GET | `/api/v1/measurements/{id}` | 特定の測定データの取得 |
 | PUT | `/api/v1/measurements/{id}` | 測定データの更新 |
 | DELETE | `/api/v1/measurements/{id}` | 測定データの削除 |
-| POST | `/api/v1/measurements/bulk` | 測定データの一括作成 |
+|  |  |  |
+
+### ルール: Create はバルク（1..N）
+
+このリポジトリでは、作成系のエンドポイントはすべて「バルク at ルート」です。単一作成も含め、以下のように配列ラッパーでPOSTします。
+
+- Vehicles: `POST /api/v1/vehicles` ボディ `{ "vehicles": [ { ... } ] }` 返却は `VehicleBulkResponse`
+- Pipelines: `POST /api/v1/pipelines` ボディ `{ "pipelines": [ { ... } ] }` 返却は `PipelineBulkResponse`
+- Measurements: `POST /api/v1/measurements` ボディ `{ "measurements": [ { ... } ] }` 返却は `BaseResponse<MeasurementResponse[]>`
+- Datastreams: `POST /api/v1/datastreams` ボディ `{ "datastreams": [ { ... } ] }` 返却は `DataStreamBulkResponse`
+- Drivers: `POST /api/v1/drivers` ボディ `{ "drivers": [ { ... } ] }` 返却は `DriverBulkResponse`
+- PipelineData: `POST /api/v1/pipelinedata` ボディ `{ "pipeline_data": [ { ... } ] }` 返却は `BaseResponse<PipelineDataResponse[]>`
+- PipelineStates: `POST /api/v1/pipelinestates` ボディ `{ "pipeline_states": [ { ... } ] }` 返却は `BaseResponse<PipelineStateResponse[]>`
+- PipelineDependencies: `POST /api/v1/pipelinedependencies` ボディ `{ "pipeline_dependencies": [ { ... } ] }` 返却は `BaseResponse<PipelineDependencyResponse[]>`
+
+注: 旧 `/bulk` エンドポイントは削除済みです。
 
 ### Pipeline API
 
@@ -114,24 +129,24 @@ uvicorn app.main:app --reload
 | リソース | メソッド | エンドポイント | 説明 |
 |---------|---------|--------------|------|
 | pipelinedata | GET | `/pipelinedata` | パイプラインデータ一覧の取得 |
-| pipelinedata | POST | `/pipelinedata` | パイプラインデータの作成 |
+| pipelinedata | POST | `/pipelinedata` | パイプラインデータの作成（バルク、1件以上） |
 | pipelinedata | GET | `/pipelinedata/{id}` | パイプラインデータの取得 |
 | pipelinedata | PUT | `/pipelinedata/{id}` | パイプラインデータの更新 |
 | pipelinedata | DELETE | `/pipelinedata/{id}` | パイプラインデータの削除 |
-| pipelinedata | POST | `/pipelinedata/bulk` | パイプラインデータの一括作成 |
+|  |  |  |
 | pipelinestates | GET | `/pipelinestates` | パイプライン状態一覧の取得 |
-| pipelinestates | POST | `/pipelinestates` | パイプライン状態の作成 |
+| pipelinestates | POST | `/pipelinestates` | パイプライン状態の作成（バルク、1件以上） |
 | pipelinestates | GET | `/pipelinestates/{id}` | パイプライン状態の取得 |
 | pipelinestates | PUT | `/pipelinestates/{id}` | パイプライン状態の更新 |
 | pipelinestates | DELETE | `/pipelinestates/{id}` | パイプライン状態の削除 |
-| pipelinestates | POST | `/pipelinestates/bulk` | パイプライン状態の一括作成 |
+|  |  |  |
 | pipelinestates | GET | `/pipelinestates/jobs/by-pipelinedata/{pipelinedata_id}` | 指定データのジョブ一覧 |
 | pipelinedependencies | GET | `/pipelinedependencies` | 依存関係一覧の取得 |
-| pipelinedependencies | POST | `/pipelinedependencies` | 依存関係の作成 |
+| pipelinedependencies | POST | `/pipelinedependencies` | 依存関係の作成（バルク、1件以上） |
 | pipelinedependencies | GET | `/pipelinedependencies/{id}` | 依存関係の取得 |
 | pipelinedependencies | PUT | `/pipelinedependencies/{id}` | 依存関係の更新 |
 | pipelinedependencies | DELETE | `/pipelinedependencies/{id}` | 依存関係の削除 |
-| pipelinedependencies | POST | `/pipelinedependencies/bulk` | 依存関係の一括作成 |
+|  |  |  |
 | pipelinedependencies | GET | `/pipelinedependencies/parent/{parent_id}/children` | 親→子の依存関係 |
 | pipelinedependencies | GET | `/pipelinedependencies/child/{child_id}/parents` | 子→親の依存関係 |
 | pipelinedependencies | GET | `/pipelinedependencies/chain/{pipeline_state_id}` | 双方向チェーン取得 |
@@ -143,17 +158,21 @@ Legacy 互換パス（将来削除予定）
 
 ### リクエスト例
 
-#### 測定データの作成
+#### 測定データの作成（バルク）
 
 ```bash
 curl -X POST "http://localhost:8000/api/v1/measurements/" \
   -H "Content-Type: application/json" \
   -d '{
-    "vehicle_id": "550e8400-e29b-41d4-a716-446655440000",
-    "area_id": "550e8400-e29b-41d4-a716-446655440001",
-    "local_time": "2024-01-15T09:30:00",
-    "measured_at": 1705317000,
-    "data_path": "/data/measurements/2024/01/measurement_001"
+    "measurements": [
+      {
+        "vehicle_id": "550e8400-e29b-41d4-a716-446655440000",
+        "area_id": "550e8400-e29b-41d4-a716-446655440001",
+        "local_time": "2024-01-15T09:30:00",
+        "measured_at": 1705317000,
+        "data_path": "/data/measurements/2024/01/measurement_001"
+      }
+    ]
   }'
 ```
 
@@ -163,10 +182,10 @@ curl -X POST "http://localhost:8000/api/v1/measurements/" \
 curl -X GET "http://localhost:8000/api/v1/measurements/?vehicle_id=550e8400-e29b-41d4-a716-446655440000&page=1&per_page=20"
 ```
 
-#### 測定データの一括作成
+#### 測定データの一括作成（複数件）
 
 ```bash
-curl -X POST "http://localhost:8000/api/v1/measurements/bulk" \
+curl -X POST "http://localhost:8000/api/v1/measurements/" \
   -H "Content-Type: application/json" \
   -d '{
     "measurements": [

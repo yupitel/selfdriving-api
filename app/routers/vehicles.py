@@ -6,7 +6,6 @@ from sqlmodel import Session
 
 from app.cores.database import get_session
 from app.schemas.vehicle import (
-    VehicleCreate,
     VehicleUpdate,
     VehicleResponse,
     VehicleFilter,
@@ -34,28 +33,32 @@ router = APIRouter(
 )
 
 
-@router.post("/", response_model=VehicleResponse, status_code=status.HTTP_201_CREATED)
-async def create_vehicle(
-    vehicle: VehicleCreate,
+@router.post("/", response_model=VehicleBulkResponse, status_code=status.HTTP_201_CREATED)
+async def create_vehicles(
+    bulk_data: VehicleBulkCreate,
     session: Session = Depends(get_session)
-) -> VehicleResponse:
+) -> VehicleBulkResponse:
     """
-    Create a new vehicle.
-    
-    - **country**: Optional country of the vehicle
-    - **name**: Required name of the vehicle
-    - **data_path**: Optional path to vehicle data
+    Bulk create vehicles.
+
+    - **vehicles**: List of vehicles to create (max 1000)
+
+    Returns:
+    - **created**: Number of successfully created vehicles
+    - **failed**: Number of failed creations
+    - **ids**: List of created vehicle IDs
+    - **errors**: List of error details for failed creations
     """
     try:
         service = VehicleService(session)
-        created_vehicle = await service.create_vehicle(vehicle)
-        return VehicleResponse.model_validate(created_vehicle)
-    except (BadRequestException, ConflictException) as e:
-        raise HTTPException(status_code=e.status_code, detail=str(e))
+        result = await service.bulk_create_vehicles(bulk_data)
+        return VehicleBulkResponse(**result)
+    except BadRequestException as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create vehicle: {str(e)}"
+            detail=f"Failed to bulk create vehicles: {str(e)}"
         )
 
 
@@ -249,31 +252,3 @@ async def delete_vehicle(
             detail=f"Failed to delete vehicle: {str(e)}"
         )
 
-
-@router.post("/bulk", response_model=VehicleBulkResponse, status_code=status.HTTP_201_CREATED)
-async def bulk_create_vehicles(
-    bulk_data: VehicleBulkCreate,
-    session: Session = Depends(get_session)
-) -> VehicleBulkResponse:
-    """
-    Bulk create vehicles.
-    
-    - **vehicles**: List of vehicles to create (max 1000)
-    
-    Returns:
-    - **created**: Number of successfully created vehicles
-    - **failed**: Number of failed creations
-    - **ids**: List of created vehicle IDs
-    - **errors**: List of error details for failed creations
-    """
-    try:
-        service = VehicleService(session)
-        result = await service.bulk_create_vehicles(bulk_data)
-        return VehicleBulkResponse(**result)
-    except BadRequestException as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to bulk create vehicles: {str(e)}"
-        )

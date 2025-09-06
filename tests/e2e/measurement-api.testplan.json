@@ -23,16 +23,16 @@
           "api": "/api/v1/measurements/",
           "method": "POST",
           "input": {
-            "datastream_id": "DS001",
-            "timestamp": "2025-01-25T10:00:00Z",
-            "sensor_type": "lidar",
-            "data": {
-              "point_cloud_size": 65536,
-              "intensity_range": [0, 255],
-              "scan_pattern": "rotating"
-            },
-            "quality_score": 0.95,
-            "processing_status": "pending"
+            "measurements": [
+              {
+                "vehicle_id": "00000000-0000-0000-0000-000000000001",
+                "area_id": "00000000-0000-0000-0000-000000000002",
+                "local_time": "2025-01-25T10:00:00Z",
+                "measured_at": 1737772800,
+                "name": "test-measurement",
+                "data_path": "/test/measurement/001"
+              }
+            ]
           },
           "expected": {
             "status": 201
@@ -41,7 +41,7 @@
             {
               "description": "Capture created measurement ID",
               "type": "capture",
-              "from": "id",
+              "from": "data[0].id",
               "to": "global.measurementId"
             }
           ]
@@ -118,7 +118,7 @@
       "assertions": [
         {
           "description": "Bulk create measurements",
-          "api": "/api/v1/measurements/bulk",
+          "api": "/api/v1/measurements/",
           "method": "POST",
           "input": {
             "measurements": [
@@ -161,11 +161,7 @@
             ]
           },
           "expected": {
-            "status": 201,
-            "result": {
-              "created": 3,
-              "failed": 0
-            }
+            "status": 201
           },
           "postprocess": [
             {
@@ -199,9 +195,14 @@
           "api": "/api/v1/measurements/",
           "method": "POST",
           "input": {
-            "datastream_id": "",
-            "timestamp": "invalid-date",
-            "sensor_type": "unknown"
+            "measurements": [
+              {
+                "vehicle_id": "not-a-uuid",
+                "area_id": "",
+                "local_time": "invalid-date",
+                "measured_at": -1
+              }
+            ]
           },
           "expected": {
             "status": 422
@@ -236,7 +237,7 @@
         },
         {
           "description": "Bulk create with too many items",
-          "api": "/api/v1/measurements/bulk",
+          "api": "/api/v1/measurements/",
           "method": "POST",
           "input": {
             "measurements": []
@@ -268,16 +269,16 @@
           "api": "/api/v1/measurements/",
           "method": "POST",
           "input": {
-            "datastream_id": "DS_PERF",
-            "timestamp": "2025-01-25T12:00:00Z",
-            "sensor_type": "imu",
-            "data": {
-              "acceleration": [0.1, 0.2, 9.8],
-              "gyroscope": [0.01, 0.02, 0.03],
-              "magnetometer": [25.0, -5.0, 40.0]
-            },
-            "quality_score": 0.91,
-            "processing_status": "pending"
+            "measurements": [
+              {
+                "vehicle_id": "00000000-0000-0000-0000-000000000001",
+                "area_id": "00000000-0000-0000-0000-000000000002",
+                "local_time": "2025-01-25T12:00:00Z",
+                "measured_at": 1737787200,
+                "name": "perf-test",
+                "data_path": "/perf/test"
+              }
+            ]
           },
           "parallel": 20,
           "expected": {

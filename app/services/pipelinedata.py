@@ -5,7 +5,6 @@ from uuid import UUID, uuid4
 from sqlmodel import Session, select, and_
 from app.models.pipelinedata import PipelineDataModel
 from app.schemas.pipelinedata import (
-    PipelineDataCreate,
     PipelineDataUpdate,
     PipelineDataFilter,
     PipelineDataBulkCreate
@@ -21,22 +20,7 @@ class PipelineDataService:
     def __init__(self, session: Session):
         self.session = session
     
-    async def create_pipeline_data(self, pipeline_data: PipelineDataCreate) -> PipelineDataModel:
-        """Create a new pipeline data entry"""
-        try:
-            data_entry = PipelineDataModel(
-                id=uuid4(),
-                **pipeline_data.model_dump()
-            )
-            self.session.add(data_entry)
-            self.session.commit()
-            self.session.refresh(data_entry)
-            logger.info(f"Created pipeline data with ID: {data_entry.id}")
-            return data_entry
-        except Exception as e:
-            self.session.rollback()
-            logger.error(f"Error creating pipeline data: {str(e)}")
-            raise
+    # Note: Single create is removed in favor of bulk-at-root API usage.
     
     async def get_pipeline_data(self, pipeline_data_id: UUID) -> Optional[PipelineDataModel]:
         """Get pipeline data by ID"""

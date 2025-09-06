@@ -8,7 +8,6 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.models.datastream import DataStreamModel
 from app.schemas.datastream import (
-    DataStreamCreate,
     DataStreamUpdate,
     DataStreamFilter,
     DataStreamBulkCreate,
@@ -31,33 +30,7 @@ class DataStreamService:
     def __init__(self, db_session: Session):
         self.session = db_session
     
-    async def create_datastream(self, datastream_data: DataStreamCreate) -> DataStreamModel:
-        """Create a new datastream"""
-        try:
-            # Validate datastream type
-            if not DataStreamTypeEnum.is_valid(datastream_data.type):
-                raise BadRequestException(f"Invalid datastream type: {datastream_data.type}")
-            
-            # Create datastream instance
-            datastream = DataStreamModel(**datastream_data.model_dump())
-            
-            # Add to session and commit
-            self.session.add(datastream)
-            self.session.commit()
-            self.session.refresh(datastream)
-            
-            logger.info(f"Created datastream with ID: {datastream.id}")
-            return datastream
-            
-        except IntegrityError as e:
-            self.session.rollback()
-            if "foreign key" in str(e).lower():
-                raise BadRequestException(f"Measurement ID {datastream_data.measurement_id} does not exist")
-            raise ConflictException(f"DataStream already exists or constraint violation: {str(e)}")
-        except SQLAlchemyError as e:
-            self.session.rollback()
-            logger.error(f"Database error creating datastream: {str(e)}")
-            raise InternalServerException(f"Failed to create datastream: {str(e)}")
+    # Note: Single create is removed in favor of bulk-at-root API usage.
     
     async def get_datastream(self, datastream_id: UUID) -> DataStreamModel:
         """Get a datastream by ID"""

@@ -6,7 +6,6 @@ from datetime import datetime
 from sqlmodel import Session, select, and_
 from app.models.measurement import MeasurementModel
 from app.schemas.measurement import (
-    MeasurementCreate,
     MeasurementUpdate,
     MeasurementFilter,
     MeasurementBulkCreate,
@@ -25,22 +24,7 @@ class MeasurementService:
     def __init__(self, session: Session):
         self.session = session
     
-    async def create_measurement(self, measurement_data: MeasurementCreate) -> MeasurementModel:
-        """Create a new measurement"""
-        try:
-            measurement = MeasurementModel(
-                id=uuid4(),
-                **measurement_data.model_dump()
-            )
-            self.session.add(measurement)
-            self.session.commit()
-            self.session.refresh(measurement)
-            logger.info(f"Created measurement with ID: {measurement.id}")
-            return measurement
-        except Exception as e:
-            self.session.rollback()
-            logger.error(f"Error creating measurement: {str(e)}")
-            raise
+    # Note: Single create is removed in favor of bulk-at-root API usage.
     
     async def get_measurement(self, measurement_id: UUID) -> Optional[MeasurementModel]:
         """Get measurement by ID"""

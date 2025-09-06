@@ -7,7 +7,6 @@ from sqlalchemy.orm import selectinload
 from app.models.pipelinedependency import PipelineDependencyModel
 from app.models.pipelinestate import PipelineStateModel
 from app.schemas.pipelinedependency import (
-    PipelineDependencyCreate,
     PipelineDependencyUpdate,
     PipelineDependencyFilter,
     PipelineDependencyDetailResponse,
@@ -19,12 +18,7 @@ class PipelineDependencyService:
     def __init__(self, session: Session):
         self.session = session
 
-    async def create_pipeline_dependency(self, dependency: PipelineDependencyCreate) -> PipelineDependencyModel:
-        db_dependency = PipelineDependencyModel(**dependency.model_dump())
-        self.session.add(db_dependency)
-        self.session.commit()
-        self.session.refresh(db_dependency)
-        return db_dependency
+    # Note: Single create is removed in favor of bulk-at-root API usage.
 
     async def get_pipeline_dependency(self, dependency_id: UUID) -> Optional[PipelineDependencyModel]:
         statement = select(PipelineDependencyModel).where(

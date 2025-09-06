@@ -8,7 +8,6 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.models.vehicle import VehicleModel
 from app.schemas.vehicle import (
-    VehicleCreate,
     VehicleUpdate,
     VehicleFilter,
     VehicleBulkCreate
@@ -30,29 +29,7 @@ class VehicleService:
     def __init__(self, db_session: Session):
         self.session = db_session
     
-    async def create_vehicle(self, vehicle_data: VehicleCreate) -> VehicleModel:
-        """Create a new vehicle"""
-        try:
-            # Create vehicle instance
-            vehicle = VehicleModel(**vehicle_data.model_dump())
-            
-            # Add to session and commit
-            self.session.add(vehicle)
-            self.session.commit()
-            self.session.refresh(vehicle)
-            
-            logger.info(f"Created vehicle with ID: {vehicle.id}")
-            return vehicle
-            
-        except IntegrityError as e:
-            self.session.rollback()
-            if "unique" in str(e).lower():
-                raise ConflictException(f"Vehicle with this name already exists")
-            raise ConflictException(f"Vehicle creation failed: {str(e)}")
-        except SQLAlchemyError as e:
-            self.session.rollback()
-            logger.error(f"Database error creating vehicle: {str(e)}")
-            raise InternalServerException(f"Failed to create vehicle: {str(e)}")
+    # Note: Single create is removed in favor of bulk-at-root API usage.
     
     async def get_vehicle(self, vehicle_id: UUID) -> VehicleModel:
         """Get a vehicle by ID"""

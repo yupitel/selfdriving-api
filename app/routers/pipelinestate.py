@@ -7,7 +7,6 @@ from sqlmodel import Session
 from app.cores.database import get_session
 from app.schemas.base import BaseResponse
 from app.schemas.pipelinestate import (
-    PipelineStateCreate,
     PipelineStateUpdate,
     PipelineStateResponse,
     PipelineStateListResponse,
@@ -23,20 +22,29 @@ router = APIRouter(
 )
 
 
-@router.post("/", response_model=BaseResponse[PipelineStateResponse], status_code=status.HTTP_201_CREATED)
-async def create_pipeline_state(
-    pipeline_state: PipelineStateCreate,
+@router.post("/", response_model=BaseResponse[list[PipelineStateResponse]], status_code=status.HTTP_201_CREATED)
+async def create_pipeline_states(
+    bulk_data: PipelineStateBulkCreate,
     session: Session = Depends(get_session)
 ):
-    """Create a new pipeline state entry"""
+    """Bulk create pipeline state entries"""
     try:
         service = PipelineStateService(session)
-        state_entry = await service.create_pipeline_state(pipeline_state)
-        
+        pipeline_state_entries = await service.bulk_create_pipeline_states(bulk_data)
+
+        pipeline_state_responses = [
+            PipelineStateResponse.model_validate(ps) for ps in pipeline_state_entries
+        ]
+
         return BaseResponse(
             success=True,
-            message="Pipeline state created successfully",
-            data=PipelineStateResponse.model_validate(state_entry)
+            message=f"Successfully created {len(pipeline_state_entries)} pipeline state entries",
+            data=pipeline_state_responses
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
         )
     except Exception as e:
         raise HTTPException(
@@ -178,35 +186,6 @@ async def delete_pipeline_state(
         )
 
 
-@router.post("/bulk", response_model=BaseResponse[list[PipelineStateResponse]], status_code=status.HTTP_201_CREATED)
-async def bulk_create_pipeline_states(
-    bulk_data: PipelineStateBulkCreate,
-    session: Session = Depends(get_session)
-):
-    """Bulk create pipeline state entries"""
-    try:
-        service = PipelineStateService(session)
-        pipeline_state_entries = await service.bulk_create_pipeline_states(bulk_data)
-        
-        pipeline_state_responses = [
-            PipelineStateResponse.model_validate(ps) for ps in pipeline_state_entries
-        ]
-        
-        return BaseResponse(
-            success=True,
-            message=f"Successfully created {len(pipeline_state_entries)} pipeline state entries",
-            data=pipeline_state_responses
-        )
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
 
 
 # Job-specific endpoints for managing pipeline states as jobs

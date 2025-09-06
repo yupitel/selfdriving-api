@@ -7,7 +7,6 @@ from sqlmodel import Session
 from app.cores.database import get_session
 from app.schemas.base import BaseResponse
 from app.schemas.pipelinedependency import (
-    PipelineDependencyCreate,
     PipelineDependencyUpdate,
     PipelineDependencyResponse,
     PipelineDependencyListResponse,
@@ -23,20 +22,29 @@ router = APIRouter(
 )
 
 
-@router.post("/", response_model=BaseResponse[PipelineDependencyResponse], status_code=status.HTTP_201_CREATED)
-async def create_pipeline_dependency(
-    dependency: PipelineDependencyCreate,
+@router.post("/", response_model=BaseResponse[list[PipelineDependencyResponse]], status_code=status.HTTP_201_CREATED)
+async def create_pipeline_dependencies(
+    bulk_data: PipelineDependencyBulkCreate,
     session: Session = Depends(get_session)
 ):
-    """Create a new pipeline dependency"""
+    """Bulk create pipeline dependencies"""
     try:
         service = PipelineDependencyService(session)
-        dependency_entry = await service.create_pipeline_dependency(dependency)
-        
+        dependencies = await service.bulk_create_pipeline_dependencies(bulk_data)
+
+        dependency_responses = [
+            PipelineDependencyResponse.model_validate(dep) for dep in dependencies
+        ]
+
         return BaseResponse(
             success=True,
-            message="Pipeline dependency created successfully",
-            data=PipelineDependencyResponse.model_validate(dependency_entry)
+            message=f"Successfully created {len(dependencies)} pipeline dependencies",
+            data=dependency_responses
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
         )
     except Exception as e:
         raise HTTPException(
@@ -176,35 +184,6 @@ async def delete_pipeline_dependency(
         )
 
 
-@router.post("/bulk", response_model=BaseResponse[list[PipelineDependencyResponse]], status_code=status.HTTP_201_CREATED)
-async def bulk_create_pipeline_dependencies(
-    bulk_data: PipelineDependencyBulkCreate,
-    session: Session = Depends(get_session)
-):
-    """Bulk create pipeline dependencies"""
-    try:
-        service = PipelineDependencyService(session)
-        dependencies = await service.bulk_create_pipeline_dependencies(bulk_data)
-        
-        dependency_responses = [
-            PipelineDependencyResponse.model_validate(dep) for dep in dependencies
-        ]
-        
-        return BaseResponse(
-            success=True,
-            message=f"Successfully created {len(dependencies)} pipeline dependencies",
-            data=dependency_responses
-        )
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
 
 
 # Specialized dependency management endpoints

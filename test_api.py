@@ -37,16 +37,19 @@ def test_create_measurement():
         "data_path": "/data/measurements/2024/01/measurement_001"
     }
     
+    # Bulk-at-root: wrap single measurement in list
     response = requests.post(
         f"{BASE_URL}/measurements/",
-        json=measurement_data
+        json={"measurements": [measurement_data]}
     )
     
     print(f"Create measurement: {response.status_code}")
     print(json.dumps(response.json(), indent=2))
     
     if response.status_code == 201:
-        return response.json()["data"]["id"]
+        data = response.json().get("data")
+        if isinstance(data, list) and data:
+            return data[0].get("id")
     return None
 
 
@@ -114,7 +117,7 @@ def test_bulk_create():
     }
     
     response = requests.post(
-        f"{BASE_URL}/measurements/bulk",
+        f"{BASE_URL}/measurements/",
         json=bulk_data
     )
     

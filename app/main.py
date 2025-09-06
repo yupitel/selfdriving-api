@@ -44,7 +44,11 @@ async def lifespan(app: FastAPI):
 # Create FastAPI application
 app = FastAPI(
     title="Self-Driving Data Collection API",
-    description="API for managing self-driving vehicle measurement data",
+    description=(
+        "API for managing self-driving vehicle measurement data.\n\n"
+        "Important: Create endpoints are bulk-at-root. Send array-wrapped payloads to POST /{resource}.\n"
+        "Legacy /bulk endpoints have been removed."
+    ),
     version="1.0.0",
     lifespan=lifespan
 )

@@ -6,7 +6,6 @@ from sqlmodel import Session
 
 from app.cores.database import get_session
 from app.schemas.datastream import (
-    DataStreamCreate,
     DataStreamUpdate,
     DataStreamResponse,
     DataStreamFilter,
@@ -33,29 +32,32 @@ router = APIRouter(
 )
 
 
-@router.post("/", response_model=DataStreamResponse, status_code=status.HTTP_201_CREATED)
-async def create_datastream(
-    datastream: DataStreamCreate,
+@router.post("/", response_model=DataStreamBulkResponse, status_code=status.HTTP_201_CREATED)
+async def create_datastreams(
+    bulk_data: DataStreamBulkCreate,
     session: Session = Depends(get_session)
-) -> DataStreamResponse:
+) -> DataStreamBulkResponse:
     """
-    Create a new datastream.
-    
-    - **type**: DataStream type (0-32767)
-    - **measurement_id**: UUID of the associated measurement
-    - **data_path**: Optional path to the data file
-    - **src_path**: Optional source path of the data
+    Bulk create datastreams.
+
+    - **datastreams**: List of datastreams to create (max 1000)
+
+    Returns:
+    - **created**: Number of successfully created datastreams
+    - **failed**: Number of failed creations
+    - **ids**: List of created datastream IDs
+    - **errors**: List of error details for failed creations
     """
     try:
         service = DataStreamService(session)
-        created_datastream = await service.create_datastream(datastream)
-        return DataStreamResponse.model_validate(created_datastream)
-    except (BadRequestException, ConflictException) as e:
-        raise HTTPException(status_code=e.status_code, detail=str(e))
+        result = await service.bulk_create_datastreams(bulk_data)
+        return DataStreamBulkResponse(**result)
+    except BadRequestException as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create datastream: {str(e)}"
+            detail=f"Failed to bulk create datastreams: {str(e)}"
         )
 
 
@@ -227,31 +229,3 @@ async def delete_datastream(
             detail=f"Failed to delete datastream: {str(e)}"
         )
 
-
-@router.post("/bulk", response_model=DataStreamBulkResponse, status_code=status.HTTP_201_CREATED)
-async def bulk_create_datastreams(
-    bulk_data: DataStreamBulkCreate,
-    session: Session = Depends(get_session)
-) -> DataStreamBulkResponse:
-    """
-    Bulk create datastreams.
-    
-    - **datastreams**: List of datastreams to create (max 1000)
-    
-    Returns:
-    - **created**: Number of successfully created datastreams
-    - **failed**: Number of failed creations
-    - **ids**: List of created datastream IDs
-    - **errors**: List of error details for failed creations
-    """
-    try:
-        service = DataStreamService(session)
-        result = await service.bulk_create_datastreams(bulk_data)
-        return DataStreamBulkResponse(**result)
-    except BadRequestException as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to bulk create datastreams: {str(e)}"
-        )

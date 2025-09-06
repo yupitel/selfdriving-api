@@ -7,7 +7,6 @@ from sqlmodel import Session
 from app.cores.database import get_session
 from app.services.driver import DriverService
 from app.schemas.driver import (
-    DriverCreate,
     DriverUpdate,
     DriverResponse,
     DriverFilter,
@@ -25,16 +24,16 @@ from app.utils.exceptions import (
 router = APIRouter(prefix="/api/v1/drivers", tags=["drivers"])
 
 
-@router.post("/", response_model=DriverResponse, status_code=201)
-async def create_driver(
-    driver_data: DriverCreate,
+@router.post("/", response_model=DriverBulkResponse, status_code=201)
+async def create_drivers(
+    bulk_data: DriverBulkCreate,
     session: Session = Depends(get_session)
 ):
-    """Create a new driver"""
+    """Bulk create drivers"""
     service = DriverService(session)
     try:
-        driver = await service.create_driver(driver_data)
-        return driver
+        result = await service.bulk_create_drivers(bulk_data)
+        return result
     except (BadRequestException, ConflictException) as e:
         raise HTTPException(status_code=400, detail=str(e))
     except InternalServerException as e:
@@ -125,24 +124,7 @@ async def delete_driver(
     except InternalServerException as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
-@router.post("/bulk", response_model=DriverBulkResponse)
-async def bulk_create_drivers(
-    bulk_data: DriverBulkCreate,
-    session: Session = Depends(get_session)
-):
-    """Bulk create drivers"""
-    service = DriverService(session)
-    try:
-        result = await service.bulk_create_drivers(bulk_data)
-        return result
-    except BadRequestException as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except InternalServerException as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-
+ 
 
 @router.get("/supervisor/{supervisor_id}/subordinates", response_model=List[DriverResponse])
 async def get_drivers_by_supervisor(

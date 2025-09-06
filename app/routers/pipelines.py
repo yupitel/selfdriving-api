@@ -6,7 +6,6 @@ from sqlmodel import Session
 
 from app.cores.database import get_session
 from app.schemas.pipeline import (
-    PipelineCreate,
     PipelineUpdate,
     PipelineResponse,
     PipelineFilter,
@@ -34,32 +33,32 @@ router = APIRouter(
 )
 
 
-@router.post("/", response_model=PipelineResponse, status_code=status.HTTP_201_CREATED)
-async def create_pipeline(
-    pipeline: PipelineCreate,
+@router.post("/", response_model=PipelineBulkResponse, status_code=status.HTTP_201_CREATED)
+async def create_pipelines(
+    bulk_data: PipelineBulkCreate,
     session: Session = Depends(get_session)
-) -> PipelineResponse:
+) -> PipelineBulkResponse:
     """
-    Create a new pipeline.
-    
-    - **name**: Required name of the pipeline
-    - **type**: Pipeline type (0-32767)
-    - **group**: Pipeline group (0-32767)
-    - **is_available**: Availability status (0=unavailable, 1=available)
-    - **version**: Pipeline version
-    - **options**: Optional pipeline options as JSON string
-    - **params**: Required pipeline parameters as JSON string
+    Bulk create pipelines.
+
+    - **pipelines**: List of pipelines to create (max 1000)
+
+    Returns:
+    - **created**: Number of successfully created pipelines
+    - **failed**: Number of failed creations
+    - **ids**: List of created pipeline IDs
+    - **errors**: List of error details for failed creations
     """
     try:
         service = PipelineService(session)
-        created_pipeline = await service.create_pipeline(pipeline)
-        return PipelineResponse.model_validate(created_pipeline)
-    except (BadRequestException, ConflictException) as e:
-        raise HTTPException(status_code=e.status_code, detail=str(e))
+        result = await service.bulk_create_pipelines(bulk_data)
+        return PipelineBulkResponse(**result)
+    except BadRequestException as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create pipeline: {str(e)}"
+            detail=f"Failed to bulk create pipelines: {str(e)}"
         )
 
 
@@ -285,33 +284,6 @@ async def delete_pipeline(
         )
 
 
-@router.post("/bulk", response_model=PipelineBulkResponse, status_code=status.HTTP_201_CREATED)
-async def bulk_create_pipelines(
-    bulk_data: PipelineBulkCreate,
-    session: Session = Depends(get_session)
-) -> PipelineBulkResponse:
-    """
-    Bulk create pipelines.
-    
-    - **pipelines**: List of pipelines to create (max 1000)
-    
-    Returns:
-    - **created**: Number of successfully created pipelines
-    - **failed**: Number of failed creations
-    - **ids**: List of created pipeline IDs
-    - **errors**: List of error details for failed creations
-    """
-    try:
-        service = PipelineService(session)
-        result = await service.bulk_create_pipelines(bulk_data)
-        return PipelineBulkResponse(**result)
-    except BadRequestException as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to bulk create pipelines: {str(e)}"
-        )
 
 
 @router.post("/{pipeline_id}/execute", response_model=Dict[str, Any])

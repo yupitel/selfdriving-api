@@ -127,6 +127,10 @@ class PipelineDataService:
         try:
             pipeline_data_entries = []
             for data in bulk_data.pipeline_data:
+                # Basic validation: must reference either a datastream or a scene
+                if not data.datastream_id and not data.scene_id:
+                    raise ValueError("Each pipeline_data item must include either datastream_id or scene_id")
+                # Note: type is already required by schema
                 data_entry = PipelineDataModel(
                     id=uuid4(),
                     **data.model_dump()

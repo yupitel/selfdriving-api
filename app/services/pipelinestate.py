@@ -183,6 +183,17 @@ class PipelineStateService:
         try:
             pipeline_state_entries = []
             for state in bulk_data.pipeline_states:
+                # Validate foreign keys where possible
+                # Validate pipelinedata_id exists
+                if state.pipelinedata_id:
+                    pd_stmt = select(PipelineDataModel).where(PipelineDataModel.id == state.pipelinedata_id)
+                    if self.session.exec(pd_stmt).first() is None:
+                        raise ValueError(f"Invalid pipelinedata_id: {state.pipelinedata_id}")
+                # Validate pipeline_id exists
+                if state.pipeline_id:
+                    pl_stmt = select(PipelineModel).where(PipelineModel.id == state.pipeline_id)
+                    if self.session.exec(pl_stmt).first() is None:
+                        raise ValueError(f"Invalid pipeline_id: {state.pipeline_id}")
                 state_entry = PipelineStateModel(
                     id=uuid4(),
                     **state.model_dump()

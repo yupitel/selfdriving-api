@@ -45,6 +45,16 @@ class VehicleService:
         except SQLAlchemyError as e:
             logger.error(f"Database error fetching vehicle {vehicle_id}: {str(e)}")
             raise InternalServerException(f"Failed to fetch vehicle: {str(e)}")
+
+    async def get_vehicles_by_id(self, vehicle_id: UUID) -> List[VehicleModel]:
+        """Get vehicle(s) by ID as a list (0 or 1 items)."""
+        try:
+            statement = select(VehicleModel).where(VehicleModel.id == vehicle_id)
+            vehicles = self.session.exec(statement).all()
+            return list(vehicles)
+        except SQLAlchemyError as e:
+            logger.error(f"Database error fetching vehicles list {vehicle_id}: {str(e)}")
+            raise InternalServerException(f"Failed to fetch vehicles: {str(e)}")
     
     async def list_vehicles(self, filters: VehicleFilter) -> List[VehicleModel]:
         """List vehicles with optional filters"""

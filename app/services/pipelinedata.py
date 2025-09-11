@@ -34,6 +34,12 @@ class PipelineDataService:
             logger.warning(f"Pipeline data not found with ID: {pipeline_data_id}")
         
         return pipeline_data
+
+    async def get_pipeline_data_list_by_id(self, pipeline_data_id: UUID) -> List[PipelineDataModel]:
+        """Get pipeline data by ID as a list (0 or 1 items)."""
+        statement = select(PipelineDataModel).where(PipelineDataModel.id == pipeline_data_id)
+        result = self.session.exec(statement)
+        return result.all()
     
     async def get_pipeline_data_list(self, filter_params: PipelineDataFilter) -> Tuple[List[PipelineDataModel], int]:
         """Get list of pipeline data with filtering and pagination"""

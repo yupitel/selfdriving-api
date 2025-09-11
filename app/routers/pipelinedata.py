@@ -52,28 +52,22 @@ async def create_pipeline_data(
         )
 
 
-@router.get("/{pipeline_data_id}", response_model=BaseResponse[PipelineDataResponse])
+@router.get("/{pipeline_data_id}", response_model=BaseResponse[list[PipelineDataResponse]])
 async def get_pipeline_data(
     pipeline_data_id: UUID,
     session: Session = Depends(get_session)
 ):
-    """Get pipeline data by ID"""
+    """Get pipeline data by ID as a list. Returns [] when not found"""
     service = PipelineDataService(session)
-    pipeline_data = await service.get_pipeline_data(pipeline_data_id)
-    
-    if not pipeline_data:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Pipeline data with ID {pipeline_data_id} not found"
-        )
-    
+    pipeline_data_list = await service.get_pipeline_data_list_by_id(pipeline_data_id)
+    responses = [PipelineDataResponse.model_validate(pd) for pd in pipeline_data_list]
     return BaseResponse(
         success=True,
-        data=PipelineDataResponse.model_validate(pipeline_data)
+        data=responses
     )
 
 
-@router.get("/", response_model=PipelineDataListResponse)
+@router.get("/", response_model=BaseResponse[PipelineDataListResponse])
 async def get_pipeline_data_list(
     type: Optional[int] = Query(None, description="Filter by type"),
     datastream_id: Optional[UUID] = Query(None, description="Filter by datastream ID"),
@@ -102,11 +96,14 @@ async def get_pipeline_data_list(
         PipelineDataResponse.model_validate(pd) for pd in pipeline_data_list
     ]
     
-    return PipelineDataListResponse(
-        pipeline_data=pipeline_data_responses,
-        total=total,
-        page=page,
-        per_page=per_page
+    return BaseResponse(
+        success=True,
+        data=PipelineDataListResponse(
+            pipeline_data=pipeline_data_responses,
+            total=total,
+            page=page,
+            per_page=per_page
+        )
     )
 
 

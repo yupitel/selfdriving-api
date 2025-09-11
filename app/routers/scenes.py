@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlmodel import Session
 
 from app.cores.database import get_session
+from app.schemas.base import BaseResponse
 from app.schemas.scene import (
     SceneCreate,
     SceneUpdate,
@@ -33,10 +34,10 @@ router = APIRouter(
 )
 
 
-@router.post("/", response_model=SceneResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=BaseResponse[SceneResponse], status_code=status.HTTP_201_CREATED)
 async def create_scene(
     scene: SceneCreate, session: Session = Depends(get_session)
-) -> SceneResponse:
+) -> BaseResponse[SceneResponse]:
     """
     Create a new scene.
 
@@ -48,7 +49,7 @@ async def create_scene(
     try:
         service = SceneService(session)
         created = await service.create_scene(scene)
-        return SceneResponse.model_validate(created)
+        return BaseResponse(success=True, data=SceneResponse.model_validate(created))
     except (BadRequestException, ConflictException) as e:
         raise HTTPException(status_code=e.status_code, detail=str(e))
     except Exception as e:
@@ -58,7 +59,7 @@ async def create_scene(
         )
 
 
-@router.get("/", response_model=List[Union[SceneListItemResponse, SceneResponse]])
+@router.get("/", response_model=BaseResponse[list[Union[SceneListItemResponse, SceneResponse]]])
 async def list_scenes(
     type: Optional[int] = Query(None, ge=0, le=32767, description="Filter by type"),
     state: Optional[int] = Query(None, ge=0, le=32767, description="Filter by state"),
@@ -72,7 +73,7 @@ async def list_scenes(
     offset: int = Query(0, ge=0, description="Number of results to skip"),
     include_metadata: bool = Query(True, description="Include vehicle/driver metadata"),
     session: Session = Depends(get_session),
-) -> List[Union[SceneListItemResponse, SceneResponse]]:
+) -> BaseResponse[list[Union[SceneListItemResponse, SceneResponse]]]:
     """List scenes with optional filters and metadata."""
     try:
         filters = SceneFilter(
@@ -93,11 +94,11 @@ async def list_scenes(
         
         if include_metadata:
             # Returns SceneListItemResponse objects with metadata
-            return await service.list_scenes_with_metadata(filters)
+            data = await service.list_scenes_with_metadata(filters)
+            return BaseResponse(success=True, data=data)
         else:
-            # Returns basic SceneResponse objects
             scenes = await service.list_scenes(filters)
-            return [SceneResponse.model_validate(s) for s in scenes]
+            return BaseResponse(success=True, data=[SceneResponse.model_validate(s) for s in scenes])
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -105,15 +106,13 @@ async def list_scenes(
         )
 
 
-@router.get("/{scene_id}", response_model=SceneResponse)
-async def get_scene(scene_id: UUID, session: Session = Depends(get_session)) -> SceneResponse:
-    """Get a specific scene by ID."""
+@router.get("/{scene_id}", response_model=BaseResponse[list[SceneResponse]])
+async def get_scene(scene_id: UUID, session: Session = Depends(get_session)) -> BaseResponse[list[SceneResponse]]:
+    """Get scene(s) by ID as a list. Returns [] when not found."""
     try:
         service = SceneService(session)
-        scene = await service.get_scene(scene_id)
-        return SceneResponse.model_validate(scene)
-    except NotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        scenes = await service.get_scenes_by_id(scene_id)
+        return BaseResponse(success=True, data=[SceneResponse.model_validate(s) for s in scenes])
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -121,13 +120,13 @@ async def get_scene(scene_id: UUID, session: Session = Depends(get_session)) -> 
         )
 
 
-@router.get("/{scene_id}/detail", response_model=SceneDetailResponse)
-async def get_scene_detail(scene_id: UUID, session: Session = Depends(get_session)) -> SceneDetailResponse:
+@router.get("/{scene_id}/detail", response_model=BaseResponse[SceneDetailResponse])
+async def get_scene_detail(scene_id: UUID, session: Session = Depends(get_session)) -> BaseResponse[SceneDetailResponse]:
     """Get a specific scene with full details including vehicle, driver, and measurement information."""
     try:
         service = SceneService(session)
         scene_detail = await service.get_scene_detail(scene_id)
-        return scene_detail
+        return BaseResponse(success=True, data=scene_detail)
     except NotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
@@ -137,15 +136,15 @@ async def get_scene_detail(scene_id: UUID, session: Session = Depends(get_sessio
         )
 
 
-@router.put("/{scene_id}", response_model=SceneResponse)
+@router.put("/{scene_id}", response_model=BaseResponse[SceneResponse])
 async def update_scene(
     scene_id: UUID, scene_update: SceneUpdate, session: Session = Depends(get_session)
-) -> SceneResponse:
+) -> BaseResponse[SceneResponse]:
     """Update a scene."""
     try:
         service = SceneService(session)
         updated = await service.update_scene(scene_id, scene_update)
-        return SceneResponse.model_validate(updated)
+        return BaseResponse(success=True, data=SceneResponse.model_validate(updated))
     except NotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except (BadRequestException, ConflictException) as e:
@@ -157,12 +156,13 @@ async def update_scene(
         )
 
 
-@router.delete("/{scene_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_scene(scene_id: UUID, session: Session = Depends(get_session)) -> None:
+@router.delete("/{scene_id}", response_model=BaseResponse[None])
+async def delete_scene(scene_id: UUID, session: Session = Depends(get_session)) -> BaseResponse[None]:
     """Delete a scene."""
     try:
         service = SceneService(session)
         await service.delete_scene(scene_id)
+        return BaseResponse(success=True, message="Scene deleted")
     except NotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
@@ -170,4 +170,3 @@ async def delete_scene(scene_id: UUID, session: Session = Depends(get_session)) 
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete scene: {str(e)}",
         )
-

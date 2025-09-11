@@ -46,6 +46,18 @@ class DataStreamService:
         except SQLAlchemyError as e:
             logger.error(f"Database error fetching datastream {datastream_id}: {str(e)}")
             raise InternalServerException(f"Failed to fetch datastream: {str(e)}")
+
+    async def get_datastreams_by_id(self, datastream_id: UUID) -> List[DataStreamModel]:
+        """Get datastream(s) by ID as a list (0 or 1 items).
+        Returns 200 with an empty list when not found, matching list semantics.
+        """
+        try:
+            statement = select(DataStreamModel).where(DataStreamModel.id == datastream_id)
+            datastreams = self.session.exec(statement).all()
+            return list(datastreams)
+        except SQLAlchemyError as e:
+            logger.error(f"Database error fetching datastream list {datastream_id}: {str(e)}")
+            raise InternalServerException(f"Failed to fetch datastreams: {str(e)}")
     
     async def list_datastreams(self, filters: DataStreamFilter) -> List[DataStreamModel]:
         """List datastreams with optional filters"""

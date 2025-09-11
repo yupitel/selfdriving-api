@@ -47,6 +47,16 @@ class PipelineService:
         except SQLAlchemyError as e:
             logger.error(f"Database error fetching pipeline {pipeline_id}: {str(e)}")
             raise InternalServerException(f"Failed to fetch pipeline: {str(e)}")
+
+    async def get_pipelines_by_id(self, pipeline_id: UUID) -> List[PipelineModel]:
+        """Get pipeline(s) by ID as a list (0 or 1 items)."""
+        try:
+            statement = select(PipelineModel).where(PipelineModel.id == pipeline_id)
+            pipelines = self.session.exec(statement).all()
+            return list(pipelines)
+        except SQLAlchemyError as e:
+            logger.error(f"Database error fetching pipeline list {pipeline_id}: {str(e)}")
+            raise InternalServerException(f"Failed to fetch pipelines: {str(e)}")
     
     async def list_pipelines(self, filters: PipelineFilter) -> List[PipelineModel]:
         """List pipelines with optional filters"""

@@ -54,24 +54,18 @@ async def create_measurements(
         )
 
 
-@router.get("/{measurement_id}", response_model=BaseResponse[MeasurementResponse])
+@router.get("/{measurement_id}", response_model=BaseResponse[list[MeasurementResponse]])
 async def get_measurement(
     measurement_id: UUID,
     session: Session = Depends(get_session)
 ):
-    """Get measurement by ID"""
+    """Get measurement(s) by ID as a list. Returns [] when not found"""
     service = MeasurementService(session)
-    measurement = await service.get_measurement(measurement_id)
-    
-    if not measurement:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Measurement with ID {measurement_id} not found"
-        )
-    
+    measurements = await service.get_measurements_by_id(measurement_id)
+    measurement_responses = [MeasurementResponse.model_validate(m) for m in measurements]
     return BaseResponse(
         success=True,
-        data=MeasurementResponse.model_validate(measurement)
+        data=measurement_responses
     )
 
 
@@ -96,7 +90,7 @@ async def get_measurement_detail(
     )
 
 
-@router.get("/", response_model=MeasurementListResponse)
+@router.get("/", response_model=BaseResponse[MeasurementListResponse])
 async def get_measurements(
     vehicle_id: Optional[UUID] = Query(None, description="Filter by vehicle ID"),
     area_id: Optional[UUID] = Query(None, description="Filter by area ID"),
@@ -125,11 +119,14 @@ async def get_measurements(
         MeasurementResponse.model_validate(m) for m in measurements
     ]
     
-    return MeasurementListResponse(
-        measurements=measurement_responses,
-        total=total,
-        page=page,
-        per_page=per_page
+    return BaseResponse(
+        success=True,
+        data=MeasurementListResponse(
+            measurements=measurement_responses,
+            total=total,
+            page=page,
+            per_page=per_page
+        )
     )
 
 

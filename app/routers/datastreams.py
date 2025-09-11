@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlmodel import Session
 
 from app.cores.database import get_session
+from app.schemas.base import BaseResponse
 from app.schemas.datastream import (
     DataStreamUpdate,
     DataStreamResponse,
@@ -32,11 +33,11 @@ router = APIRouter(
 )
 
 
-@router.post("/", response_model=DataStreamBulkResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=BaseResponse[DataStreamBulkResponse], status_code=status.HTTP_201_CREATED)
 async def create_datastreams(
     bulk_data: DataStreamBulkCreate,
     session: Session = Depends(get_session)
-) -> DataStreamBulkResponse:
+) -> BaseResponse[DataStreamBulkResponse]:
     """
     Bulk create datastreams.
 
@@ -51,7 +52,7 @@ async def create_datastreams(
     try:
         service = DataStreamService(session)
         result = await service.create_datastreams(bulk_data)
-        return DataStreamBulkResponse(**result)
+        return BaseResponse(success=True, data=DataStreamBulkResponse(**result))
     except BadRequestException as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
@@ -61,7 +62,7 @@ async def create_datastreams(
         )
 
 
-@router.get("/", response_model=List[DataStreamResponse])
+@router.get("/", response_model=BaseResponse[list[DataStreamResponse]])
 async def list_datastreams(
     type: Optional[int] = Query(None, ge=0, le=32767, description="Filter by type"),
     measurement_id: Optional[UUID] = Query(None, description="Filter by measurement ID"),
@@ -73,7 +74,7 @@ async def list_datastreams(
     limit: int = Query(100, gt=0, le=1000, description="Maximum number of results"),
     offset: int = Query(0, ge=0, description="Number of results to skip"),
     session: Session = Depends(get_session)
-) -> List[DataStreamResponse]:
+) -> BaseResponse[list[DataStreamResponse]]:
     """
     List datastreams with optional filters.
     
@@ -104,7 +105,7 @@ async def list_datastreams(
         
         service = DataStreamService(session)
         datastreams = await service.list_datastreams(filters)
-        return [DataStreamResponse.model_validate(ds) for ds in datastreams]
+        return BaseResponse(success=True, data=[DataStreamResponse.model_validate(ds) for ds in datastreams])
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -112,10 +113,10 @@ async def list_datastreams(
         )
 
 
-@router.get("/statistics", response_model=dict)
+@router.get("/statistics", response_model=BaseResponse[dict])
 async def get_datastream_statistics(
     session: Session = Depends(get_session)
-) -> dict:
+) -> BaseResponse[dict]:
     """
     Get statistics about datastreams.
     
@@ -127,7 +128,8 @@ async def get_datastream_statistics(
     """
     try:
         service = DataStreamService(session)
-        return await service.get_datastream_statistics()
+        stats = await service.get_datastream_statistics()
+        return BaseResponse(success=True, data=stats)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -135,12 +137,12 @@ async def get_datastream_statistics(
         )
 
 
-@router.get("/measurement/{measurement_id}", response_model=List[DataStreamResponse])
+@router.get("/measurement/{measurement_id}", response_model=BaseResponse[list[DataStreamResponse]])
 async def get_datastreams_by_measurement(
     measurement_id: UUID,
     limit: int = Query(100, gt=0, le=1000, description="Maximum number of results"),
     session: Session = Depends(get_session)
-) -> List[DataStreamResponse]:
+) -> BaseResponse[list[DataStreamResponse]]:
     """
     Get all datastreams for a specific measurement.
     
@@ -150,7 +152,7 @@ async def get_datastreams_by_measurement(
     try:
         service = DataStreamService(session)
         datastreams = await service.get_datastreams_by_measurement(measurement_id, limit)
-        return [DataStreamResponse.model_validate(ds) for ds in datastreams]
+        return BaseResponse(success=True, data=[DataStreamResponse.model_validate(ds) for ds in datastreams])
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -158,22 +160,19 @@ async def get_datastreams_by_measurement(
         )
 
 
-@router.get("/{datastream_id}", response_model=DataStreamResponse)
+@router.get("/{datastream_id}", response_model=BaseResponse[list[DataStreamResponse]])
 async def get_datastream(
     datastream_id: UUID,
     session: Session = Depends(get_session)
-) -> DataStreamResponse:
+) -> BaseResponse[list[DataStreamResponse]]:
     """
-    Get a specific datastream by ID.
-    
-    - **datastream_id**: UUID of the datastream
+    Get datastream(s) by ID as a list.
+    - Returns [] when not found (200 OK).
     """
     try:
         service = DataStreamService(session)
-        datastream = await service.get_datastream(datastream_id)
-        return DataStreamResponse.model_validate(datastream)
-    except NotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        datastreams = await service.get_datastreams_by_id(datastream_id)
+        return BaseResponse(success=True, data=[DataStreamResponse.model_validate(ds) for ds in datastreams])
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -181,12 +180,12 @@ async def get_datastream(
         )
 
 
-@router.put("/{datastream_id}", response_model=DataStreamResponse)
+@router.put("/{datastream_id}", response_model=BaseResponse[DataStreamResponse])
 async def update_datastream(
     datastream_id: UUID,
     datastream_update: DataStreamUpdate,
     session: Session = Depends(get_session)
-) -> DataStreamResponse:
+) -> BaseResponse[DataStreamResponse]:
     """
     Update a datastream.
     
@@ -196,7 +195,7 @@ async def update_datastream(
     try:
         service = DataStreamService(session)
         updated_datastream = await service.update_datastream(datastream_id, datastream_update)
-        return DataStreamResponse.model_validate(updated_datastream)
+        return BaseResponse(success=True, data=DataStreamResponse.model_validate(updated_datastream))
     except NotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except (BadRequestException, ConflictException) as e:
@@ -208,7 +207,7 @@ async def update_datastream(
         )
 
 
-@router.delete("/{datastream_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{datastream_id}", response_model=BaseResponse[None])
 async def delete_datastream(
     datastream_id: UUID,
     session: Session = Depends(get_session)
@@ -221,6 +220,7 @@ async def delete_datastream(
     try:
         service = DataStreamService(session)
         await service.delete_datastream(datastream_id)
+        return BaseResponse(success=True, message="Datastream deleted")
     except NotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:

@@ -37,6 +37,12 @@ class PipelineStateService:
             logger.warning(f"Pipeline state not found with ID: {pipeline_state_id}")
         
         return pipeline_state
+
+    async def get_pipeline_states_by_id(self, pipeline_state_id: UUID) -> List[PipelineStateModel]:
+        """Get pipeline state by ID as a list (0 or 1 items)."""
+        statement = select(PipelineStateModel).where(PipelineStateModel.id == pipeline_state_id)
+        result = self.session.exec(statement)
+        return result.all()
     
     async def get_pipeline_state_detail(self, pipeline_state_id: UUID) -> Optional[PipelineStateDetailResponse]:
         """Get pipeline state with detailed information"""

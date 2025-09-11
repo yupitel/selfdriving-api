@@ -36,6 +36,12 @@ class MeasurementService:
             logger.warning(f"Measurement not found: {measurement_id}")
         
         return measurement
+
+    async def get_measurements_by_id(self, measurement_id: UUID) -> List[MeasurementModel]:
+        """Get measurement(s) by ID as a list (0 or 1 items)."""
+        statement = select(MeasurementModel).where(MeasurementModel.id == measurement_id)
+        result = self.session.exec(statement)
+        return result.all()
     
     async def get_measurements(
         self,

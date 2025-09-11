@@ -53,24 +53,18 @@ async def create_pipeline_states(
         )
 
 
-@router.get("/{pipeline_state_id}", response_model=BaseResponse[PipelineStateResponse])
+@router.get("/{pipeline_state_id}", response_model=BaseResponse[list[PipelineStateResponse]])
 async def get_pipeline_state(
     pipeline_state_id: UUID,
     session: Session = Depends(get_session)
 ):
-    """Get pipeline state by ID"""
+    """Get pipeline state by ID as a list. Returns [] when not found"""
     service = PipelineStateService(session)
-    pipeline_state = await service.get_pipeline_state(pipeline_state_id)
-    
-    if not pipeline_state:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Pipeline state with ID {pipeline_state_id} not found"
-        )
-    
+    pipeline_states = await service.get_pipeline_states_by_id(pipeline_state_id)
+    responses = [PipelineStateResponse.model_validate(ps) for ps in pipeline_states]
     return BaseResponse(
         success=True,
-        data=PipelineStateResponse.model_validate(pipeline_state)
+        data=responses
     )
 
 
@@ -95,7 +89,7 @@ async def get_pipeline_state_detail(
     )
 
 
-@router.get("/", response_model=PipelineStateListResponse)
+@router.get("/", response_model=BaseResponse[PipelineStateListResponse])
 async def get_pipeline_states(
     pipelinedata_id: Optional[UUID] = Query(None, description="Filter by pipeline data ID"),
     pipeline_id: Optional[UUID] = Query(None, description="Filter by pipeline ID"),
@@ -122,11 +116,14 @@ async def get_pipeline_states(
         PipelineStateResponse.model_validate(ps) for ps in pipeline_states
     ]
     
-    return PipelineStateListResponse(
-        pipeline_states=pipeline_state_responses,
-        total=total,
-        page=page,
-        per_page=per_page
+    return BaseResponse(
+        success=True,
+        data=PipelineStateListResponse(
+            pipeline_states=pipeline_state_responses,
+            total=total,
+            page=page,
+            per_page=per_page
+        )
     )
 
 

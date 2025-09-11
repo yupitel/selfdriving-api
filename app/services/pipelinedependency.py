@@ -27,6 +27,14 @@ class PipelineDependencyService:
         result = self.session.exec(statement)
         return result.first()
 
+    async def get_pipeline_dependencies_by_id(self, dependency_id: UUID) -> List[PipelineDependencyModel]:
+        """Get pipeline dependency by ID as a list (0 or 1 items)."""
+        statement = select(PipelineDependencyModel).where(
+            PipelineDependencyModel.id == dependency_id
+        )
+        result = self.session.exec(statement)
+        return result.all()
+
     async def get_pipeline_dependency_detail(self, dependency_id: UUID) -> Optional[PipelineDependencyDetailResponse]:
         # Get the basic dependency first
         dependency = await self.get_pipeline_dependency(dependency_id)

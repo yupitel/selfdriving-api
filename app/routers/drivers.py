@@ -6,6 +6,7 @@ from sqlmodel import Session
 
 from app.cores.database import get_session
 from app.services.driver import DriverService
+from app.schemas.base import BaseResponse
 from app.schemas.driver import (
     DriverUpdate,
     DriverResponse,
@@ -24,7 +25,7 @@ from app.utils.exceptions import (
 router = APIRouter(prefix="/api/v1/drivers", tags=["drivers"])
 
 
-@router.post("/", response_model=DriverBulkResponse, status_code=201)
+@router.post("/", response_model=BaseResponse[DriverBulkResponse], status_code=201)
 async def create_drivers(
     bulk_data: DriverBulkCreate,
     session: Session = Depends(get_session)
@@ -33,14 +34,14 @@ async def create_drivers(
     service = DriverService(session)
     try:
         result = await service.create_drivers(bulk_data)
-        return result
+        return BaseResponse(success=True, data=result)
     except (BadRequestException, ConflictException) as e:
         raise HTTPException(status_code=400, detail=str(e))
     except InternalServerException as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/", response_model=List[DriverResponse])
+@router.get("/", response_model=BaseResponse[list[DriverResponse]])
 async def list_drivers(
     email: str = Query(None, description="Filter by email"),
     name: str = Query(None, description="Filter by name (partial match)"),
@@ -70,28 +71,26 @@ async def list_drivers(
             limit=limit
         )
         drivers, total = await service.list_drivers(filters)
-        return drivers
+        return BaseResponse(success=True, data=drivers)
     except InternalServerException as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/{driver_id}", response_model=DriverResponse)
+@router.get("/{driver_id}", response_model=BaseResponse[list[DriverResponse]])
 async def get_driver(
     driver_id: UUID,
     session: Session = Depends(get_session)
 ):
-    """Get a specific driver by ID"""
+    """Get driver(s) by ID as a list. Returns [] when not found."""
     service = DriverService(session)
     try:
-        driver = await service.get_driver(driver_id)
-        return driver
-    except NotFoundException as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        drivers = await service.get_drivers_by_id(driver_id)
+        return BaseResponse(success=True, data=drivers)
     except InternalServerException as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.put("/{driver_id}", response_model=DriverResponse)
+@router.put("/{driver_id}", response_model=BaseResponse[DriverResponse])
 async def update_driver(
     driver_id: UUID,
     update_data: DriverUpdate,
@@ -101,7 +100,7 @@ async def update_driver(
     service = DriverService(session)
     try:
         driver = await service.update_driver(driver_id, update_data)
-        return driver
+        return BaseResponse(success=True, data=driver)
     except NotFoundException as e:
         raise HTTPException(status_code=404, detail=str(e))
     except (BadRequestException, ConflictException) as e:
@@ -110,7 +109,7 @@ async def update_driver(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/{driver_id}", status_code=204)
+@router.delete("/{driver_id}", response_model=BaseResponse[None])
 async def delete_driver(
     driver_id: UUID,
     session: Session = Depends(get_session)
@@ -119,6 +118,7 @@ async def delete_driver(
     service = DriverService(session)
     try:
         await service.delete_driver(driver_id)
+        return BaseResponse(success=True, message="Driver deleted")
     except NotFoundException as e:
         raise HTTPException(status_code=404, detail=str(e))
     except InternalServerException as e:
@@ -126,7 +126,7 @@ async def delete_driver(
 
  
 
-@router.get("/supervisor/{supervisor_id}/subordinates", response_model=List[DriverResponse])
+@router.get("/supervisor/{supervisor_id}/subordinates", response_model=BaseResponse[list[DriverResponse]])
 async def get_drivers_by_supervisor(
     supervisor_id: UUID,
     session: Session = Depends(get_session)
@@ -135,12 +135,12 @@ async def get_drivers_by_supervisor(
     service = DriverService(session)
     try:
         drivers = await service.get_drivers_by_supervisor(supervisor_id)
-        return drivers
+        return BaseResponse(success=True, data=drivers)
     except InternalServerException as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/statistics/overview", response_model=DriverStatistics)
+@router.get("/statistics/overview", response_model=BaseResponse[DriverStatistics])
 async def get_driver_statistics(
     session: Session = Depends(get_session)
 ):
@@ -148,12 +148,12 @@ async def get_driver_statistics(
     service = DriverService(session)
     try:
         stats = await service.get_driver_statistics()
-        return stats
+        return BaseResponse(success=True, data=stats)
     except InternalServerException as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/{driver_id}/update-statistics", response_model=DriverResponse)
+@router.post("/{driver_id}/update-statistics", response_model=BaseResponse[DriverResponse])
 async def update_driver_statistics(
     driver_id: UUID,
     session: Session = Depends(get_session)
@@ -162,7 +162,7 @@ async def update_driver_statistics(
     service = DriverService(session)
     try:
         driver = await service.update_driver_statistics(driver_id)
-        return driver
+        return BaseResponse(success=True, data=driver)
     except NotFoundException as e:
         raise HTTPException(status_code=404, detail=str(e))
     except InternalServerException as e:

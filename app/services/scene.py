@@ -68,6 +68,16 @@ class SceneService:
             logger.error(f"Database error fetching scene {scene_id}: {str(e)}")
             raise InternalServerException(f"Failed to fetch scene: {str(e)}")
 
+    async def get_scenes_by_id(self, scene_id: UUID) -> List[SceneDataModel]:
+        """Get scene(s) by ID as a list (0 or 1 items)."""
+        try:
+            statement = select(SceneDataModel).where(SceneDataModel.id == scene_id)
+            scenes = self.session.exec(statement).all()
+            return list(scenes)
+        except SQLAlchemyError as e:
+            logger.error(f"Database error fetching scenes list {scene_id}: {str(e)}")
+            raise InternalServerException(f"Failed to fetch scene: {str(e)}")
+
     async def list_scenes(self, filters: SceneFilter) -> List[SceneDataModel]:
         """List scenes with optional filters"""
         try:
@@ -297,4 +307,3 @@ class SceneService:
         except SQLAlchemyError as e:
             logger.error(f"Database error listing scenes with metadata: {str(e)}")
             raise InternalServerException(f"Failed to list scenes with metadata: {str(e)}")
-

@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query, Body
 from sqlmodel import Session
 
 from app.cores.database import get_session
+from app.schemas.base import BaseResponse
 from app.schemas.pipeline import (
     PipelineUpdate,
     PipelineResponse,
@@ -33,11 +34,11 @@ router = APIRouter(
 )
 
 
-@router.post("/", response_model=PipelineBulkResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=BaseResponse[PipelineBulkResponse], status_code=status.HTTP_201_CREATED)
 async def create_pipelines(
     bulk_data: PipelineBulkCreate,
     session: Session = Depends(get_session)
-) -> PipelineBulkResponse:
+) -> BaseResponse[PipelineBulkResponse]:
     """
     Bulk create pipelines.
 
@@ -52,7 +53,7 @@ async def create_pipelines(
     try:
         service = PipelineService(session)
         result = await service.create_pipelines(bulk_data)
-        return PipelineBulkResponse(**result)
+        return BaseResponse(success=True, data=PipelineBulkResponse(**result))
     except BadRequestException as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
@@ -62,7 +63,7 @@ async def create_pipelines(
         )
 
 
-@router.get("/", response_model=List[PipelineResponse])
+@router.get("/", response_model=BaseResponse[list[PipelineResponse]])
 async def list_pipelines(
     name: Optional[str] = Query(None, description="Filter by name (partial match)"),
     type: Optional[int] = Query(None, ge=0, le=32767, description="Filter by type"),
@@ -76,7 +77,7 @@ async def list_pipelines(
     limit: int = Query(100, gt=0, le=1000, description="Maximum number of results"),
     offset: int = Query(0, ge=0, description="Number of results to skip"),
     session: Session = Depends(get_session)
-) -> List[PipelineResponse]:
+) -> BaseResponse[list[PipelineResponse]]:
     """
     List pipelines with optional filters.
     
@@ -111,7 +112,7 @@ async def list_pipelines(
         
         service = PipelineService(session)
         pipelines = await service.list_pipelines(filters)
-        return [PipelineResponse.model_validate(p) for p in pipelines]
+        return BaseResponse(success=True, data=[PipelineResponse.model_validate(p) for p in pipelines])
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -119,10 +120,10 @@ async def list_pipelines(
         )
 
 
-@router.get("/statistics", response_model=PipelineStatistics)
+@router.get("/statistics", response_model=BaseResponse[PipelineStatistics])
 async def get_pipeline_statistics(
     session: Session = Depends(get_session)
-) -> PipelineStatistics:
+) -> BaseResponse[PipelineStatistics]:
     """
     Get statistics about pipelines.
     
@@ -137,7 +138,7 @@ async def get_pipeline_statistics(
     try:
         service = PipelineService(session)
         stats = await service.get_pipeline_statistics()
-        return PipelineStatistics(**stats)
+        return BaseResponse(success=True, data=PipelineStatistics(**stats))
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -145,11 +146,11 @@ async def get_pipeline_statistics(
         )
 
 
-@router.get("/available", response_model=List[PipelineResponse])
+@router.get("/available", response_model=BaseResponse[list[PipelineResponse]])
 async def get_available_pipelines(
     limit: int = Query(100, gt=0, le=1000, description="Maximum number of results"),
     session: Session = Depends(get_session)
-) -> List[PipelineResponse]:
+) -> BaseResponse[list[PipelineResponse]]:
     """
     Get all available pipelines.
     
@@ -158,7 +159,7 @@ async def get_available_pipelines(
     try:
         service = PipelineService(session)
         pipelines = await service.get_available_pipelines(limit)
-        return [PipelineResponse.model_validate(p) for p in pipelines]
+        return BaseResponse(success=True, data=[PipelineResponse.model_validate(p) for p in pipelines])
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -166,12 +167,12 @@ async def get_available_pipelines(
         )
 
 
-@router.get("/type/{type_value}", response_model=List[PipelineResponse])
+@router.get("/type/{type_value}", response_model=BaseResponse[list[PipelineResponse]])
 async def get_pipelines_by_type(
     type_value: int,
     limit: int = Query(100, gt=0, le=1000, description="Maximum number of results"),
     session: Session = Depends(get_session)
-) -> List[PipelineResponse]:
+) -> BaseResponse[list[PipelineResponse]]:
     """
     Get all pipelines for a specific type.
     
@@ -181,7 +182,7 @@ async def get_pipelines_by_type(
     try:
         service = PipelineService(session)
         pipelines = await service.get_pipelines_by_type(type_value, limit)
-        return [PipelineResponse.model_validate(p) for p in pipelines]
+        return BaseResponse(success=True, data=[PipelineResponse.model_validate(p) for p in pipelines])
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -189,12 +190,12 @@ async def get_pipelines_by_type(
         )
 
 
-@router.get("/group/{group}", response_model=List[PipelineResponse])
+@router.get("/group/{group}", response_model=BaseResponse[list[PipelineResponse]])
 async def get_pipelines_by_group(
     group: int,
     limit: int = Query(100, gt=0, le=1000, description="Maximum number of results"),
     session: Session = Depends(get_session)
-) -> List[PipelineResponse]:
+) -> BaseResponse[list[PipelineResponse]]:
     """
     Get all pipelines for a specific group.
     
@@ -204,7 +205,7 @@ async def get_pipelines_by_group(
     try:
         service = PipelineService(session)
         pipelines = await service.get_pipelines_by_group(group, limit)
-        return [PipelineResponse.model_validate(p) for p in pipelines]
+        return BaseResponse(success=True, data=[PipelineResponse.model_validate(p) for p in pipelines])
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -212,22 +213,18 @@ async def get_pipelines_by_group(
         )
 
 
-@router.get("/{pipeline_id}", response_model=PipelineResponse)
+@router.get("/{pipeline_id}", response_model=BaseResponse[list[PipelineResponse]])
 async def get_pipeline(
     pipeline_id: UUID,
     session: Session = Depends(get_session)
-) -> PipelineResponse:
+) -> BaseResponse[list[PipelineResponse]]:
     """
-    Get a specific pipeline by ID.
-    
-    - **pipeline_id**: UUID of the pipeline
+    Get pipeline(s) by ID as a list. Returns [] when not found.
     """
     try:
         service = PipelineService(session)
-        pipeline = await service.get_pipeline(pipeline_id)
-        return PipelineResponse.model_validate(pipeline)
-    except NotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        pipelines = await service.get_pipelines_by_id(pipeline_id)
+        return BaseResponse(success=True, data=[PipelineResponse.model_validate(p) for p in pipelines])
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -235,12 +232,12 @@ async def get_pipeline(
         )
 
 
-@router.put("/{pipeline_id}", response_model=PipelineResponse)
+@router.put("/{pipeline_id}", response_model=BaseResponse[PipelineResponse])
 async def update_pipeline(
     pipeline_id: UUID,
     pipeline_update: PipelineUpdate,
     session: Session = Depends(get_session)
-) -> PipelineResponse:
+) -> BaseResponse[PipelineResponse]:
     """
     Update a pipeline.
     
@@ -250,7 +247,7 @@ async def update_pipeline(
     try:
         service = PipelineService(session)
         updated_pipeline = await service.update_pipeline(pipeline_id, pipeline_update)
-        return PipelineResponse.model_validate(updated_pipeline)
+        return BaseResponse(success=True, data=PipelineResponse.model_validate(updated_pipeline))
     except NotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except (BadRequestException, ConflictException) as e:
@@ -262,7 +259,7 @@ async def update_pipeline(
         )
 
 
-@router.delete("/{pipeline_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{pipeline_id}", response_model=BaseResponse[None])
 async def delete_pipeline(
     pipeline_id: UUID,
     session: Session = Depends(get_session)
@@ -275,6 +272,7 @@ async def delete_pipeline(
     try:
         service = PipelineService(session)
         await service.delete_pipeline(pipeline_id)
+        return BaseResponse(success=True, message="Pipeline deleted")
     except NotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
@@ -286,12 +284,12 @@ async def delete_pipeline(
 
 
 
-@router.post("/{pipeline_id}/execute", response_model=Dict[str, Any])
+@router.post("/{pipeline_id}/execute", response_model=BaseResponse[Dict[str, Any]])
 async def execute_pipeline(
     pipeline_id: UUID,
     input_params: Dict[str, Any] = Body(..., description="Input parameters for pipeline execution"),
     session: Session = Depends(get_session)
-) -> Dict[str, Any]:
+) -> BaseResponse[Dict[str, Any]]:
     """
     Execute a pipeline with given parameters.
     
@@ -307,7 +305,7 @@ async def execute_pipeline(
     try:
         service = PipelineService(session)
         result = await service.execute_pipeline(pipeline_id, input_params)
-        return result
+        return BaseResponse(success=True, data=result)
     except NotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except BadRequestException as e:

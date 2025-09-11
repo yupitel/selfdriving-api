@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlmodel import Session
 
 from app.cores.database import get_session
+from app.schemas.base import BaseResponse
 from app.schemas.vehicle import (
     VehicleUpdate,
     VehicleResponse,
@@ -33,11 +34,11 @@ router = APIRouter(
 )
 
 
-@router.post("/", response_model=VehicleBulkResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=BaseResponse[VehicleBulkResponse], status_code=status.HTTP_201_CREATED)
 async def create_vehicles(
     bulk_data: VehicleBulkCreate,
     session: Session = Depends(get_session)
-) -> VehicleBulkResponse:
+) -> BaseResponse[VehicleBulkResponse]:
     """
     Bulk create vehicles.
 
@@ -52,7 +53,7 @@ async def create_vehicles(
     try:
         service = VehicleService(session)
         result = await service.create_vehicles(bulk_data)
-        return VehicleBulkResponse(**result)
+        return BaseResponse(success=True, data=VehicleBulkResponse(**result))
     except BadRequestException as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
@@ -62,7 +63,7 @@ async def create_vehicles(
         )
 
 
-@router.get("/", response_model=List[VehicleResponse])
+@router.get("/", response_model=BaseResponse[list[VehicleResponse]])
 async def list_vehicles(
     country: Optional[str] = Query(None, description="Filter by country (exact match)"),
     name: Optional[str] = Query(None, description="Filter by name (partial match)"),
@@ -72,7 +73,7 @@ async def list_vehicles(
     limit: int = Query(100, gt=0, le=1000, description="Maximum number of results"),
     offset: int = Query(0, ge=0, description="Number of results to skip"),
     session: Session = Depends(get_session)
-) -> List[VehicleResponse]:
+) -> BaseResponse[list[VehicleResponse]]:
     """
     List vehicles with optional filters.
     
@@ -99,7 +100,7 @@ async def list_vehicles(
         
         service = VehicleService(session)
         vehicles = await service.list_vehicles(filters)
-        return [VehicleResponse.model_validate(v) for v in vehicles]
+        return BaseResponse(success=True, data=[VehicleResponse.model_validate(v) for v in vehicles])
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -107,10 +108,10 @@ async def list_vehicles(
         )
 
 
-@router.get("/statistics", response_model=VehicleStatistics)
+@router.get("/statistics", response_model=BaseResponse[VehicleStatistics])
 async def get_vehicle_statistics(
     session: Session = Depends(get_session)
-) -> VehicleStatistics:
+) -> BaseResponse[VehicleStatistics]:
     """
     Get statistics about vehicles.
     
@@ -122,7 +123,7 @@ async def get_vehicle_statistics(
     try:
         service = VehicleService(session)
         stats = await service.get_vehicle_statistics()
-        return VehicleStatistics(**stats)
+        return BaseResponse(success=True, data=VehicleStatistics(**stats))
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -130,12 +131,12 @@ async def get_vehicle_statistics(
         )
 
 
-@router.get("/country/{country}", response_model=List[VehicleResponse])
+@router.get("/country/{country}", response_model=BaseResponse[list[VehicleResponse]])
 async def get_vehicles_by_country(
     country: str,
     limit: int = Query(100, gt=0, le=1000, description="Maximum number of results"),
     session: Session = Depends(get_session)
-) -> List[VehicleResponse]:
+) -> BaseResponse[list[VehicleResponse]]:
     """
     Get all vehicles for a specific country.
     
@@ -145,7 +146,7 @@ async def get_vehicles_by_country(
     try:
         service = VehicleService(session)
         vehicles = await service.get_vehicles_by_country(country, limit)
-        return [VehicleResponse.model_validate(v) for v in vehicles]
+        return BaseResponse(success=True, data=[VehicleResponse.model_validate(v) for v in vehicles])
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -153,11 +154,11 @@ async def get_vehicles_by_country(
         )
 
 
-@router.get("/name/{name}", response_model=Optional[VehicleResponse])
+@router.get("/name/{name}", response_model=BaseResponse[VehicleResponse])
 async def get_vehicle_by_name(
     name: str,
     session: Session = Depends(get_session)
-) -> Optional[VehicleResponse]:
+) -> BaseResponse[VehicleResponse]:
     """
     Get a vehicle by name.
     
@@ -171,7 +172,7 @@ async def get_vehicle_by_name(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Vehicle with name '{name}' not found"
             )
-        return VehicleResponse.model_validate(vehicle)
+        return BaseResponse(success=True, data=VehicleResponse.model_validate(vehicle))
     except HTTPException:
         raise
     except Exception as e:
@@ -181,22 +182,18 @@ async def get_vehicle_by_name(
         )
 
 
-@router.get("/{vehicle_id}", response_model=VehicleResponse)
+@router.get("/{vehicle_id}", response_model=BaseResponse[list[VehicleResponse]])
 async def get_vehicle(
     vehicle_id: UUID,
     session: Session = Depends(get_session)
-) -> VehicleResponse:
+) -> BaseResponse[list[VehicleResponse]]:
     """
-    Get a specific vehicle by ID.
-    
-    - **vehicle_id**: UUID of the vehicle
+    Get vehicle(s) by ID as a list. Returns [] when not found.
     """
     try:
         service = VehicleService(session)
-        vehicle = await service.get_vehicle(vehicle_id)
-        return VehicleResponse.model_validate(vehicle)
-    except NotFoundException as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        vehicles = await service.get_vehicles_by_id(vehicle_id)
+        return BaseResponse(success=True, data=[VehicleResponse.model_validate(v) for v in vehicles])
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -204,12 +201,12 @@ async def get_vehicle(
         )
 
 
-@router.put("/{vehicle_id}", response_model=VehicleResponse)
+@router.put("/{vehicle_id}", response_model=BaseResponse[VehicleResponse])
 async def update_vehicle(
     vehicle_id: UUID,
     vehicle_update: VehicleUpdate,
     session: Session = Depends(get_session)
-) -> VehicleResponse:
+) -> BaseResponse[VehicleResponse]:
     """
     Update a vehicle.
     
@@ -219,7 +216,7 @@ async def update_vehicle(
     try:
         service = VehicleService(session)
         updated_vehicle = await service.update_vehicle(vehicle_id, vehicle_update)
-        return VehicleResponse.model_validate(updated_vehicle)
+        return BaseResponse(success=True, data=VehicleResponse.model_validate(updated_vehicle))
     except NotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except (BadRequestException, ConflictException) as e:
@@ -231,7 +228,7 @@ async def update_vehicle(
         )
 
 
-@router.delete("/{vehicle_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{vehicle_id}", response_model=BaseResponse[None])
 async def delete_vehicle(
     vehicle_id: UUID,
     session: Session = Depends(get_session)
@@ -244,6 +241,7 @@ async def delete_vehicle(
     try:
         service = VehicleService(session)
         await service.delete_vehicle(vehicle_id)
+        return BaseResponse(success=True, message="Vehicle deleted")
     except NotFoundException as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:

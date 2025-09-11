@@ -53,24 +53,18 @@ async def create_pipeline_dependencies(
         )
 
 
-@router.get("/{dependency_id}", response_model=BaseResponse[PipelineDependencyResponse])
+@router.get("/{dependency_id}", response_model=BaseResponse[list[PipelineDependencyResponse]])
 async def get_pipeline_dependency(
     dependency_id: UUID,
     session: Session = Depends(get_session)
 ):
-    """Get pipeline dependency by ID"""
+    """Get pipeline dependency by ID as a list. Returns [] when not found"""
     service = PipelineDependencyService(session)
-    dependency = await service.get_pipeline_dependency(dependency_id)
-    
-    if not dependency:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Pipeline dependency with ID {dependency_id} not found"
-        )
-    
+    dependencies = await service.get_pipeline_dependencies_by_id(dependency_id)
+    responses = [PipelineDependencyResponse.model_validate(dep) for dep in dependencies]
     return BaseResponse(
         success=True,
-        data=PipelineDependencyResponse.model_validate(dependency)
+        data=responses
     )
 
 
@@ -95,7 +89,7 @@ async def get_pipeline_dependency_detail(
     )
 
 
-@router.get("/", response_model=PipelineDependencyListResponse)
+@router.get("/", response_model=BaseResponse[PipelineDependencyListResponse])
 async def get_pipeline_dependencies(
     parent_id: Optional[UUID] = Query(None, description="Filter by parent pipeline state ID"),
     child_id: Optional[UUID] = Query(None, description="Filter by child pipeline state ID"),
@@ -120,11 +114,14 @@ async def get_pipeline_dependencies(
         PipelineDependencyResponse.model_validate(dep) for dep in dependencies
     ]
     
-    return PipelineDependencyListResponse(
-        pipeline_dependencies=dependency_responses,
-        total=total,
-        page=page,
-        per_page=per_page
+    return BaseResponse(
+        success=True,
+        data=PipelineDependencyListResponse(
+            pipeline_dependencies=dependency_responses,
+            total=total,
+            page=page,
+            per_page=per_page
+        )
     )
 
 

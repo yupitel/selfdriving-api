@@ -46,6 +46,16 @@ class DriverService:
         except SQLAlchemyError as e:
             logger.error(f"Database error fetching driver {driver_id}: {str(e)}")
             raise InternalServerException(f"Failed to fetch driver: {str(e)}")
+
+    async def get_drivers_by_id(self, driver_id: UUID) -> List[DriverModel]:
+        """Get driver(s) by ID as a list (0 or 1 items)."""
+        try:
+            statement = select(DriverModel).where(DriverModel.id == driver_id)
+            drivers = self.session.exec(statement).all()
+            return list(drivers)
+        except SQLAlchemyError as e:
+            logger.error(f"Database error fetching driver list {driver_id}: {str(e)}")
+            raise InternalServerException(f"Failed to fetch drivers: {str(e)}")
     
     
     

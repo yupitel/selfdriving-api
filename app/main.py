@@ -3,6 +3,7 @@ import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -51,6 +52,31 @@ app = FastAPI(
     ),
     version="1.0.0",
     lifespan=lifespan
+)
+
+# CORS configuration (driven by environment variables)
+origins_env = os.getenv("ALLOWED_ORIGINS", "")
+methods_env = os.getenv("ALLOWED_METHODS", "GET,POST,PUT,DELETE,PATCH,OPTIONS")
+headers_env = os.getenv("ALLOWED_HEADERS", "*")
+allow_credentials_env = os.getenv("CORS_ALLOW_CREDENTIALS", "false")
+
+allowed_origins = [o.strip() for o in origins_env.split(",") if o.strip()] or [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+allowed_methods = [m.strip() for m in methods_env.split(",") if m.strip()] or ["*"]
+if headers_env.strip() == "*":
+    allowed_headers = ["*"]
+else:
+    allowed_headers = [h.strip() for h in headers_env.split(",") if h.strip()] or ["*"]
+allow_credentials = allow_credentials_env.lower() == "true"
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=allow_credentials,
+    allow_methods=allowed_methods,
+    allow_headers=allowed_headers,
 )
 
 

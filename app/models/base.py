@@ -9,7 +9,8 @@ from sqlmodel import Field, SQLModel
 class BaseSQLModel(SQLModel):
     __table_args__ = {"schema": SCHEMA}
     
-    id: UUID = Field(default=None, primary_key=True)
+    # Generate UUID in application layer to avoid NULL identity issues on insert
+    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True, nullable=False)
     created_at: int = Field(..., nullable=False)
     updated_at: int = Field(..., nullable=False)
 

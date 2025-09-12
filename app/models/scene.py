@@ -10,8 +10,8 @@ class SceneDataModel(BaseSQLModel, table=True):
     __tablename__ = SCENE
 
     name: Optional[str] = Field(default=None, nullable=True)
-    type: int = Field(..., sa_column=Column(SmallInteger, nullable=False))
-    state: int = Field(..., sa_column=Column(SmallInteger, nullable=False))
+    type: Optional[int] = Field(..., sa_column=Column(SmallInteger, nullable=True))
+    state: Optional[int] = Field(..., sa_column=Column(SmallInteger, nullable=True))
     datastream_id: Optional[UUID] = Field(default=None, nullable=True)
     start_idx: int = Field(..., nullable=False)
     end_idx: int = Field(..., nullable=False)

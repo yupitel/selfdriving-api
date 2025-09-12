@@ -6,11 +6,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session
 
 from app.cores.database import get_session
-from app.schemas.base import BaseResponse, PaginatedResponse
+from app.schemas.base import BaseResponse
 from app.schemas.measurement import (
     MeasurementUpdate,
     MeasurementResponse,
-    MeasurementListResponse,
     MeasurementFilter,
     MeasurementBulkCreate,
     MeasurementDetailResponse
@@ -90,7 +89,7 @@ async def get_measurement_detail(
     )
 
 
-@router.get("/", response_model=BaseResponse[MeasurementListResponse])
+@router.get("/", response_model=BaseResponse[list[MeasurementResponse]])
 async def get_measurements(
     vehicle_id: Optional[UUID] = Query(None, description="Filter by vehicle ID"),
     area_id: Optional[UUID] = Query(None, description="Filter by area ID"),
@@ -121,12 +120,7 @@ async def get_measurements(
     
     return BaseResponse(
         success=True,
-        data=MeasurementListResponse(
-            measurements=measurement_responses,
-            total=total,
-            page=page,
-            per_page=per_page
-        )
+        data=measurement_responses
     )
 
 

@@ -218,6 +218,25 @@ python test_api.py
 
 FastAPIの自動生成ドキュメント：
 
+
+## レスポンス仕様の統一（変更点）
+
+一覧系エンドポイントのレスポンスを、以下のシンプルな形式に統一しました。
+
+- 旧: `BaseResponse[XXXListResponse]`（ボディに items と total/page/per_page を含む）
+- 新: `BaseResponse[list[XXXResponse]]`（ボディは配列のみ）
+
+対象エンドポイント:
+- `GET /api/v1/measurements` → `BaseResponse[list[MeasurementResponse]]`
+- `GET /api/v1/pipelinedata` → `BaseResponse[list[PipelineDataResponse]]`
+- `GET /api/v1/pipelinestates` → `BaseResponse[list[PipelineStateResponse]]`
+- `GET /api/v1/pipelinedependencies` → `BaseResponse[list[PipelineDependencyResponse]]`
+
+備考:
+- クエリパラメータの `page`/`per_page`（または `limit`/`offset`）は従来どおり利用可能です。
+- ボディ内のページネーションメタデータ（total/page/per_page）は廃止しました。
+- 必要に応じて将来ヘッダー（例: `X-Total-Count`）での提供を検討できます。
+
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
 

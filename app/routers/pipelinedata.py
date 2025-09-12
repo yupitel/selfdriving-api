@@ -9,7 +9,6 @@ from app.schemas.base import BaseResponse
 from app.schemas.pipelinedata import (
     PipelineDataUpdate,
     PipelineDataResponse,
-    PipelineDataListResponse,
     PipelineDataFilter,
     PipelineDataBulkCreate
 )
@@ -67,7 +66,7 @@ async def get_pipeline_data(
     )
 
 
-@router.get("/", response_model=BaseResponse[PipelineDataListResponse])
+@router.get("/", response_model=BaseResponse[list[PipelineDataResponse]])
 async def get_pipeline_data_list(
     type: Optional[int] = Query(None, description="Filter by type"),
     datastream_id: Optional[UUID] = Query(None, description="Filter by datastream ID"),
@@ -98,12 +97,7 @@ async def get_pipeline_data_list(
     
     return BaseResponse(
         success=True,
-        data=PipelineDataListResponse(
-            pipeline_data=pipeline_data_responses,
-            total=total,
-            page=page,
-            per_page=per_page
-        )
+        data=pipeline_data_responses
     )
 
 

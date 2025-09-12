@@ -9,7 +9,6 @@ from app.schemas.base import BaseResponse
 from app.schemas.pipelinestate import (
     PipelineStateUpdate,
     PipelineStateResponse,
-    PipelineStateListResponse,
     PipelineStateFilter,
     PipelineStateBulkCreate,
     PipelineStateDetailResponse
@@ -89,7 +88,7 @@ async def get_pipeline_state_detail(
     )
 
 
-@router.get("/", response_model=BaseResponse[PipelineStateListResponse])
+@router.get("/", response_model=BaseResponse[list[PipelineStateResponse]])
 async def get_pipeline_states(
     pipeline_data_id: Optional[UUID] = Query(None, description="Filter by pipeline data ID"),
     pipeline_id: Optional[UUID] = Query(None, description="Filter by pipeline ID"),
@@ -118,12 +117,7 @@ async def get_pipeline_states(
     
     return BaseResponse(
         success=True,
-        data=PipelineStateListResponse(
-            pipeline_states=pipeline_state_responses,
-            total=total,
-            page=page,
-            per_page=per_page
-        )
+        data=pipeline_state_responses
     )
 
 

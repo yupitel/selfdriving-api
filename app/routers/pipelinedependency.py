@@ -9,7 +9,6 @@ from app.schemas.base import BaseResponse
 from app.schemas.pipelinedependency import (
     PipelineDependencyUpdate,
     PipelineDependencyResponse,
-    PipelineDependencyListResponse,
     PipelineDependencyFilter,
     PipelineDependencyBulkCreate,
     PipelineDependencyDetailResponse
@@ -89,7 +88,7 @@ async def get_pipeline_dependency_detail(
     )
 
 
-@router.get("/", response_model=BaseResponse[PipelineDependencyListResponse])
+@router.get("/", response_model=BaseResponse[list[PipelineDependencyResponse]])
 async def get_pipeline_dependencies(
     parent_id: Optional[UUID] = Query(None, description="Filter by parent pipeline state ID"),
     child_id: Optional[UUID] = Query(None, description="Filter by child pipeline state ID"),
@@ -116,12 +115,7 @@ async def get_pipeline_dependencies(
     
     return BaseResponse(
         success=True,
-        data=PipelineDependencyListResponse(
-            pipeline_dependencies=dependency_responses,
-            total=total,
-            page=page,
-            per_page=per_page
-        )
+        data=dependency_responses
     )
 
 

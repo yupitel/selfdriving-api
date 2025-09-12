@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field, ConfigDict
 
 class PipelineStateBase(BaseModel):
     """Base pipelinestate schema"""
-    pipelinedata_id: UUID = Field(..., description="Associated pipeline data ID")
+    pipeline_data_id: UUID = Field(..., description="Associated pipeline data ID")
     pipeline_id: UUID = Field(..., description="Associated pipeline ID")
     input: str = Field(..., description="Input data or parameters")
     output: str = Field(..., description="Output data or results")
@@ -20,7 +20,7 @@ class PipelineStateCreate(PipelineStateBase):
 
 class PipelineStateUpdate(BaseModel):
     """Schema for updating pipeline state"""
-    pipelinedata_id: Optional[UUID] = Field(None, description="Associated pipeline data ID")
+    pipeline_data_id: Optional[UUID] = Field(None, description="Associated pipeline data ID")
     pipeline_id: Optional[UUID] = Field(None, description="Associated pipeline ID")
     input: Optional[str] = Field(None, description="Input data or parameters")
     output: Optional[str] = Field(None, description="Output data or results")
@@ -46,7 +46,7 @@ class PipelineStateListResponse(BaseModel):
 
 class PipelineStateFilter(BaseModel):
     """Schema for pipeline state filtering"""
-    pipelinedata_id: Optional[UUID] = None
+    pipeline_data_id: Optional[UUID] = None
     pipeline_id: Optional[UUID] = None
     state: Optional[int] = None
     offset: int = 0
@@ -63,7 +63,7 @@ class PipelineStateDetailResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     
     id: UUID
-    pipelinedata_id: UUID
+    pipeline_data_id: UUID
     pipeline_id: UUID
     input: str
     output: str

@@ -9,7 +9,7 @@ from sqlmodel import Field, Column, SmallInteger
 class PipelineStateModel(BaseSQLModel, table=True):
     __tablename__ = PIPELINE_STATE
 
-    pipelinedata_id: UUID = Field(..., nullable=False)
+    pipeline_data_id: UUID = Field(..., nullable=False)
     pipeline_id: UUID = Field(..., nullable=False)
     input: str = Field(..., nullable=False)
     output: str = Field(..., nullable=False)

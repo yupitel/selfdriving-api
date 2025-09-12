@@ -19,6 +19,9 @@ from app.models.datastream import DataStreamModel
 from app.models.vehicle import VehicleModel
 from app.models.pipeline import PipelineModel
 from app.models.scene import SceneDataModel
+from app.models.pipelinedata import PipelineDataModel
+from app.models.pipelinestate import PipelineStateModel
+from app.models.pipelinedependency import PipelineDependencyModel
 from app.models.sensor import SensorModel
 
 logger = logging.getLogger(__name__)

@@ -91,7 +91,7 @@ async def get_pipeline_state_detail(
 
 @router.get("/", response_model=BaseResponse[PipelineStateListResponse])
 async def get_pipeline_states(
-    pipelinedata_id: Optional[UUID] = Query(None, description="Filter by pipeline data ID"),
+    pipeline_data_id: Optional[UUID] = Query(None, description="Filter by pipeline data ID"),
     pipeline_id: Optional[UUID] = Query(None, description="Filter by pipeline ID"),
     state: Optional[int] = Query(None, description="Filter by state"),
     page: int = Query(1, ge=1, description="Page number"),
@@ -102,7 +102,7 @@ async def get_pipeline_states(
     offset = (page - 1) * per_page
     
     filter_params = PipelineStateFilter(
-        pipelinedata_id=pipelinedata_id,
+        pipeline_data_id=pipeline_data_id,
         pipeline_id=pipeline_id,
         state=state,
         offset=offset,
@@ -186,14 +186,14 @@ async def delete_pipeline_state(
 
 
 # Job-specific endpoints for managing pipeline states as jobs
-@router.get("/jobs/by-pipelinedata/{pipelinedata_id}", response_model=BaseResponse[list[PipelineStateResponse]])
+@router.get("/jobs/by-pipeline-data/{pipeline_data_id}", response_model=BaseResponse[list[PipelineStateResponse]])
 async def get_jobs_by_pipeline_data(
-    pipelinedata_id: UUID,
+    pipeline_data_id: UUID,
     session: Session = Depends(get_session)
 ):
     """Get all jobs (pipeline states) for a specific pipeline data"""
     service = PipelineStateService(session)
-    job_states = await service.get_job_states_for_pipeline_data(pipelinedata_id)
+    job_states = await service.get_job_states_for_pipeline_data(pipeline_data_id)
     
     job_responses = [
         PipelineStateResponse.model_validate(js) for js in job_states
@@ -202,5 +202,5 @@ async def get_jobs_by_pipeline_data(
     return BaseResponse(
         success=True,
         data=job_responses,
-        message=f"Retrieved {len(job_responses)} jobs for pipeline data {pipelinedata_id}"
+        message=f"Retrieved {len(job_responses)} jobs for pipeline data {pipeline_data_id}"
     )

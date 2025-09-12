@@ -53,9 +53,9 @@ class PipelineStateService:
         
         # Get related pipeline data info
         pipelinedata_info = None
-        if pipeline_state.pipelinedata_id:
+        if pipeline_state.pipeline_data_id:
             pipelinedata_statement = select(PipelineDataModel).where(
-                PipelineDataModel.id == pipeline_state.pipelinedata_id
+                PipelineDataModel.id == pipeline_state.pipeline_data_id
             )
             pipelinedata_result = self.session.exec(pipelinedata_statement)
             pipelinedata = pipelinedata_result.first()
@@ -87,7 +87,7 @@ class PipelineStateService:
         # Create detailed response
         detail_response = PipelineStateDetailResponse(
             id=pipeline_state.id,
-            pipelinedata_id=pipeline_state.pipelinedata_id,
+            pipeline_data_id=pipeline_state.pipeline_data_id,
             pipeline_id=pipeline_state.pipeline_id,
             input=pipeline_state.input,
             output=pipeline_state.output,
@@ -107,8 +107,8 @@ class PipelineStateService:
         conditions = []
         
         # Apply filters
-        if filter_params.pipelinedata_id:
-            conditions.append(PipelineStateModel.pipelinedata_id == filter_params.pipelinedata_id)
+        if filter_params.pipeline_data_id:
+            conditions.append(PipelineStateModel.pipeline_data_id == filter_params.pipeline_data_id)
         
         if filter_params.pipeline_id:
             conditions.append(PipelineStateModel.pipeline_id == filter_params.pipeline_id)
@@ -190,11 +190,11 @@ class PipelineStateService:
             pipeline_state_entries = []
             for state in bulk_data.pipeline_states:
                 # Validate foreign keys where possible
-                # Validate pipelinedata_id exists
-                if state.pipelinedata_id:
-                    pd_stmt = select(PipelineDataModel).where(PipelineDataModel.id == state.pipelinedata_id)
+                # Validate pipeline_data_id exists
+                if state.pipeline_data_id:
+                    pd_stmt = select(PipelineDataModel).where(PipelineDataModel.id == state.pipeline_data_id)
                     if self.session.exec(pd_stmt).first() is None:
-                        raise ValueError(f"Invalid pipelinedata_id: {state.pipelinedata_id}")
+                        raise ValueError(f"Invalid pipeline_data_id: {state.pipeline_data_id}")
                 # Validate pipeline_id exists
                 if state.pipeline_id:
                     pl_stmt = select(PipelineModel).where(PipelineModel.id == state.pipeline_id)
@@ -221,13 +221,13 @@ class PipelineStateService:
             logger.error(f"Error bulk creating pipeline states: {str(e)}")
             raise
     
-    async def get_job_states_for_pipeline_data(self, pipelinedata_id: UUID) -> List[PipelineStateModel]:
+    async def get_job_states_for_pipeline_data(self, pipeline_data_id: UUID) -> List[PipelineStateModel]:
         """Get all pipeline states (jobs) for a specific pipeline data"""
         statement = select(PipelineStateModel).where(
-            PipelineStateModel.pipelinedata_id == pipelinedata_id
+            PipelineStateModel.pipeline_data_id == pipeline_data_id
         )
         result = self.session.exec(statement)
         states = list(result)
         
-        logger.info(f"Retrieved {len(states)} job states for pipeline data ID: {pipelinedata_id}")
+        logger.info(f"Retrieved {len(states)} job states for pipeline data ID: {pipeline_data_id}")
         return states

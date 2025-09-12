@@ -166,6 +166,8 @@ CREATE INDEX IF NOT EXISTS idx_scene_type ON scene(type);
 CREATE INDEX IF NOT EXISTS idx_scene_state ON scene(state);
 CREATE INDEX IF NOT EXISTS idx_scene_datastream_id ON scene(datastream_id);
 CREATE INDEX IF NOT EXISTS idx_scene_created_at ON scene(created_at DESC);
+-- Composite index to accelerate range queries on a datastream
+CREATE INDEX IF NOT EXISTS idx_scene_datastream_range ON scene(datastream_id, start_idx, end_idx);
 
 -- Add comments
 COMMENT ON TABLE scene IS 'Scene segments or events detected within datastreams';
@@ -378,13 +380,13 @@ CREATE TABLE IF NOT EXISTS pipelinestate (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     created_at BIGINT NOT NULL,
     updated_at BIGINT NOT NULL,
-    pipelinedata_id UUID NOT NULL,
+    pipeline_data_id UUID NOT NULL,
     pipeline_id UUID NOT NULL,
     input TEXT NOT NULL,  -- JSON string for input configuration
     output TEXT NOT NULL,  -- JSON string for output results
     state SMALLINT NOT NULL,
     CONSTRAINT fk_pipelinestate_pipelinedata 
-        FOREIGN KEY (pipelinedata_id) 
+        FOREIGN KEY (pipeline_data_id) 
         REFERENCES pipelinedata(id) 
         ON DELETE CASCADE,
     CONSTRAINT fk_pipelinestate_pipeline 
@@ -394,7 +396,7 @@ CREATE TABLE IF NOT EXISTS pipelinestate (
 );
 
 -- Create indexes for pipelinestate table
-CREATE INDEX IF NOT EXISTS idx_pipelinestate_pipelinedata_id ON pipelinestate(pipelinedata_id);
+CREATE INDEX IF NOT EXISTS idx_pipelinestate_pipeline_data_id ON pipelinestate(pipeline_data_id);
 CREATE INDEX IF NOT EXISTS idx_pipelinestate_pipeline_id ON pipelinestate(pipeline_id);
 CREATE INDEX IF NOT EXISTS idx_pipelinestate_state ON pipelinestate(state);
 CREATE INDEX IF NOT EXISTS idx_pipelinestate_created_at ON pipelinestate(created_at DESC);
@@ -404,7 +406,7 @@ COMMENT ON TABLE pipelinestate IS 'Pipeline execution states representing jobs';
 COMMENT ON COLUMN pipelinestate.id IS 'Unique identifier for the pipeline state';
 COMMENT ON COLUMN pipelinestate.created_at IS 'Unix timestamp when the record was created';
 COMMENT ON COLUMN pipelinestate.updated_at IS 'Unix timestamp when the record was last updated';
-COMMENT ON COLUMN pipelinestate.pipelinedata_id IS 'Reference to the pipeline data being processed';
+COMMENT ON COLUMN pipelinestate.pipeline_data_id IS 'Reference to the pipeline data being processed';
 COMMENT ON COLUMN pipelinestate.pipeline_id IS 'Reference to the pipeline configuration';
 COMMENT ON COLUMN pipelinestate.input IS 'Input configuration as JSON string';
 COMMENT ON COLUMN pipelinestate.output IS 'Output results as JSON string';

@@ -140,7 +140,7 @@ uvicorn app.main:app --reload
 | pipelinestates | PUT | `/pipelinestates/{id}` | パイプライン状態の更新 |
 | pipelinestates | DELETE | `/pipelinestates/{id}` | パイプライン状態の削除 |
 |  |  |  |
-| pipelinestates | GET | `/pipelinestates/jobs/by-pipelinedata/{pipelinedata_id}` | 指定データのジョブ一覧 |
+| pipelinestates | GET | `/pipelinestates/jobs/by-pipeline-data/{pipeline_data_id}` | 指定データのジョブ一覧 |
 | pipelinedependencies | GET | `/pipelinedependencies` | 依存関係一覧の取得 |
 | pipelinedependencies | POST | `/pipelinedependencies` | 依存関係の作成（バルク、1件以上） |
 | pipelinedependencies | GET | `/pipelinedependencies/{id}` | 依存関係の取得 |

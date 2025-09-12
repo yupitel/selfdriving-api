@@ -504,7 +504,7 @@ ON CONFLICT (id) DO NOTHING;
 -- =====================================================
 -- 6. PIPELINESTATE TEST DATA (Jobs)
 -- =====================================================
-INSERT INTO pipelinestate (id, created_at, updated_at, pipelinedata_id, pipeline_id, input, output, state)
+INSERT INTO pipelinestate (id, created_at, updated_at, pipeline_data_id, pipeline_id, input, output, state)
 VALUES
     -- Completed jobs
     ('66666666-6666-6666-6666-666666666601', EXTRACT(EPOCH FROM NOW() - INTERVAL '25 days')::BIGINT, EXTRACT(EPOCH FROM NOW() - INTERVAL '24 days')::BIGINT,

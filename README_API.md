@@ -99,7 +99,8 @@ uvicorn app.main:app --reload
 | メソッド | エンドポイント | 説明 |
 |---------|--------------|------|
 | POST | `/api/v1/measurements/` | 測定データの作成（バルク、1件以上） |
-| GET | `/api/v1/measurements/` | 測定データ一覧の取得 |
+| GET | `/api/v1/measurements/` | 測定データ一覧の取得（limit/offset） |
+| GET | `/api/v1/measurements/count` | 測定データ件数の取得（フィルタ適用） |
 | GET | `/api/v1/measurements/{id}` | 特定の測定データの取得 |
 | PUT | `/api/v1/measurements/{id}` | 測定データの更新 |
 | DELETE | `/api/v1/measurements/{id}` | 測定データの削除 |
@@ -176,10 +177,22 @@ curl -X POST "http://localhost:8000/api/v1/measurements/" \
   }'
 ```
 
-#### 測定データの一覧取得（フィルタリング付き）
+#### 測定データの一覧取得（フィルタリング + ページング）
 
 ```bash
-curl -X GET "http://localhost:8000/api/v1/measurements/?vehicle_id=550e8400-e29b-41d4-a716-446655440000&page=1&per_page=20"
+curl -X GET "http://localhost:8000/api/v1/measurements/?vehicle_id=550e8400-e29b-41d4-a716-446655440000&limit=20&offset=0"
+```
+
+安定したページングのため、`limit` と `offset` を標準化しました。
+
+- 旧 `page` / `per_page` は後方互換のため当面サポートします（内部で `limit/offset` に変換）。
+- デフォルトソートは `created_at DESC, id DESC` です（ページング間で順序が安定）。
+
+件数のみを取得する場合は、同一フィルタで `/count` を呼び出してください。
+
+```bash
+curl -X GET "http://localhost:8000/api/v1/measurements/count?vehicle_id=550e8400-e29b-41d4-a716-446655440000"
+# => { "result": true, "data": { "count": 1234 } }
 ```
 
 #### 測定データの一括作成（複数件）
@@ -219,6 +232,19 @@ python test_api.py
 FastAPIの自動生成ドキュメント：
 
 
+## 件数取得（/count）エンドポイント（新規）
+
+リストと同一のフィルタを受け付け、正確な件数を返します。レスポンス例: `{ "count": 123 }`。
+
+- `GET /api/v1/vehicles/count`
+- `GET /api/v1/measurements/count`
+- `GET /api/v1/datastreams/count`
+- `GET /api/v1/pipelines/count`
+
+用途:
+- ページネーションの総件数表示
+- 軽量な統計・UX 最適化（一覧の並行取得と組み合わせ）
+
 ## レスポンス仕様の統一（変更点）
 
 一覧系エンドポイントのレスポンスを、以下のシンプルな形式に統一しました。
@@ -233,7 +259,7 @@ FastAPIの自動生成ドキュメント：
 - `GET /api/v1/pipelinedependencies` → `BaseResponse[list[PipelineDependencyResponse]]`
 
 備考:
-- クエリパラメータの `page`/`per_page`（または `limit`/`offset`）は従来どおり利用可能です。
+- クエリパラメータは `limit`/`offset` を標準とし、`page`/`per_page` は後方互換のため当面サポートします。
 - ボディ内のページネーションメタデータ（total/page/per_page）は廃止しました。
 - 必要に応じて将来ヘッダー（例: `X-Total-Count`）での提供を検討できます。
 

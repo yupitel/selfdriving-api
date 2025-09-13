@@ -4,6 +4,7 @@ from uuid import UUID, uuid4
 from datetime import datetime
 
 from sqlmodel import Session, select, and_
+from sqlalchemy import func
 from app.models.measurement import MeasurementModel
 from app.schemas.measurement import (
     MeasurementUpdate,
@@ -80,12 +81,14 @@ class MeasurementService:
             statement = statement.where(and_(*conditions))
         
         # Get total count
-        count_statement = select(MeasurementModel)
+        count_statement = select(func.count()).select_from(MeasurementModel)
         if conditions:
             count_statement = count_statement.where(and_(*conditions))
-        total = len(self.session.exec(count_statement).all())
+        count_result = self.session.exec(count_statement).one()
+        total = int(count_result[0] if isinstance(count_result, tuple) else count_result)
         
-        # Apply pagination
+        # Apply stable default ordering and pagination
+        statement = statement.order_by(MeasurementModel.created_at.desc(), MeasurementModel.id.desc())
         statement = statement.offset(filter_params.offset).limit(filter_params.limit)
         
         # Execute query
@@ -94,6 +97,39 @@ class MeasurementService:
         
         logger.info(f"Retrieved {len(measurements)} measurements (total: {total})")
         return measurements, total
+
+    async def count_measurements(self, filter_params: MeasurementFilter) -> int:
+        """Count measurements matching filters using SELECT COUNT(*)"""
+        # Build filter conditions similar to get_measurements
+        conditions = []
+        if filter_params.vehicle_id:
+            conditions.append(MeasurementModel.vehicle_id == filter_params.vehicle_id)
+        if filter_params.area_id:
+            conditions.append(MeasurementModel.area_id == filter_params.area_id)
+        if filter_params.driver_id:
+            conditions.append(MeasurementModel.driver_id == filter_params.driver_id)
+        if filter_params.start_time:
+            conditions.append(MeasurementModel.local_time >= filter_params.start_time)
+        if filter_params.end_time:
+            conditions.append(MeasurementModel.local_time <= filter_params.end_time)
+        if filter_params.weather_condition:
+            conditions.append(MeasurementModel.weather_condition == filter_params.weather_condition)
+        if filter_params.road_condition:
+            conditions.append(MeasurementModel.road_condition == filter_params.road_condition)
+        if filter_params.min_distance:
+            conditions.append(MeasurementModel.distance >= filter_params.min_distance)
+        if filter_params.max_distance:
+            conditions.append(MeasurementModel.distance <= filter_params.max_distance)
+        if filter_params.min_duration:
+            conditions.append(MeasurementModel.duration >= filter_params.min_duration)
+        if filter_params.max_duration:
+            conditions.append(MeasurementModel.duration <= filter_params.max_duration)
+
+        count_statement = select(func.count()).select_from(MeasurementModel)
+        if conditions:
+            count_statement = count_statement.where(and_(*conditions))
+        count_result = self.session.exec(count_statement).one()
+        return int(count_result[0] if isinstance(count_result, tuple) else count_result)
     
     async def update_measurement(
         self,

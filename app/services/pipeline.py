@@ -5,6 +5,7 @@ from uuid import UUID
 from datetime import datetime
 
 from sqlmodel import Session, select, and_, or_
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.models.pipeline import PipelineModel
@@ -110,6 +111,40 @@ class PipelineService:
         except SQLAlchemyError as e:
             logger.error(f"Database error listing pipelines: {str(e)}")
             raise InternalServerException(f"Failed to list pipelines: {str(e)}")
+
+    async def count_pipelines(self, filters: PipelineFilter) -> int:
+        """Count pipelines matching filters using SELECT COUNT(*)"""
+        try:
+            statement = select(func.count()).select_from(PipelineModel)
+
+            conditions = []
+            if filters.name:
+                conditions.append(PipelineModel.name.contains(filters.name))
+            if filters.type is not None:
+                conditions.append(PipelineModel.type == filters.type)
+            if filters.group is not None:
+                conditions.append(PipelineModel.group == filters.group)
+            if filters.is_available is not None:
+                conditions.append(PipelineModel.is_available == filters.is_available)
+            if filters.version is not None:
+                conditions.append(PipelineModel.version == filters.version)
+            if filters.min_version is not None:
+                conditions.append(PipelineModel.version >= filters.min_version)
+            if filters.max_version is not None:
+                conditions.append(PipelineModel.version <= filters.max_version)
+            if filters.start_time:
+                conditions.append(PipelineModel.created_at >= filters.start_time)
+            if filters.end_time:
+                conditions.append(PipelineModel.created_at <= filters.end_time)
+
+            if conditions:
+                statement = statement.where(and_(*conditions))
+
+            result = self.session.exec(statement).one()
+            return int(result[0] if isinstance(result, tuple) else result)
+        except SQLAlchemyError as e:
+            logger.error(f"Database error counting pipelines: {str(e)}")
+            raise InternalServerException(f"Failed to count pipelines: {str(e)}")
     
     async def update_pipeline(
         self, 

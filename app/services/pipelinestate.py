@@ -3,6 +3,7 @@ from typing import List, Optional, Tuple
 from uuid import UUID, uuid4
 
 from sqlmodel import Session, select, and_
+from sqlalchemy import func
 from app.models.pipelinestate import PipelineStateModel
 from app.models.pipelinedata import PipelineDataModel
 from app.models.pipeline import PipelineModel
@@ -121,9 +122,11 @@ class PipelineStateService:
             base_statement = base_statement.where(and_(*conditions))
         
         # Get total count
-        count_statement = select(PipelineStateModel).where(and_(*conditions)) if conditions else select(PipelineStateModel)
-        total_result = self.session.exec(count_statement)
-        total = len(list(total_result))
+        count_statement = select(func.count()).select_from(PipelineStateModel)
+        if conditions:
+            count_statement = count_statement.where(and_(*conditions))
+        total_result = self.session.exec(count_statement).one()
+        total = int(total_result[0] if isinstance(total_result, tuple) else total_result)
         
         # Apply pagination
         statement = base_statement.offset(filter_params.offset).limit(filter_params.limit)
@@ -231,3 +234,18 @@ class PipelineStateService:
         
         logger.info(f"Retrieved {len(states)} job states for pipeline data ID: {pipeline_data_id}")
         return states
+
+    async def count_pipeline_states(self, filter_params: PipelineStateFilter) -> int:
+        """Count pipeline states matching filters using SELECT COUNT(*)"""
+        base_statement = select(func.count()).select_from(PipelineStateModel)
+        conditions = []
+        if filter_params.pipeline_data_id:
+            conditions.append(PipelineStateModel.pipeline_data_id == filter_params.pipeline_data_id)
+        if filter_params.pipeline_id:
+            conditions.append(PipelineStateModel.pipeline_id == filter_params.pipeline_id)
+        if filter_params.state is not None:
+            conditions.append(PipelineStateModel.state == filter_params.state)
+        if conditions:
+            base_statement = base_statement.where(and_(*conditions))
+        total_result = self.session.exec(base_statement).one()
+        return int(total_result[0] if isinstance(total_result, tuple) else total_result)

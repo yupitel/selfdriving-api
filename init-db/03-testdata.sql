@@ -579,6 +579,166 @@ ON CONFLICT (id) DO NOTHING;
 -- =====================================================
 -- Run these queries to verify the test data was inserted correctly
 
+-- =====================================================
+-- 9. BULK DATA FOR PAGINATION VERIFICATION (>= 50 records each)
+-- =====================================================
+-- Vehicles (60 records)
+INSERT INTO vehicle (id, created_at, updated_at, country, name, data_path, type, status)
+SELECT (
+  '82000000-0000-0000-0000-' || lpad(gs::text, 12, '0')
+)::uuid,
+EXTRACT(EPOCH FROM NOW() - (gs || ' days')::interval)::BIGINT,
+EXTRACT(EPOCH FROM NOW())::BIGINT,
+'JP',
+'TEST-BULK-V-' || gs,
+('/data/vehicles/bulk/' || gs),
+(gs % 6),
+1
+FROM generate_series(1, 60) gs
+ON CONFLICT (id) DO NOTHING;
+
+-- Drivers (60 records)
+INSERT INTO driver (id, created_at, updated_at, email, name, name_kana,
+    license_number, license_type, license_expiry_date,
+    certification_level, certification_date, training_completed_date,
+    status, employment_type, department, team, supervisor_id,
+    total_drives, total_distance, total_duration, last_drive_date,
+    safety_score, efficiency_score, data_quality_score,
+    phone_number, emergency_contact, notes, metadata)
+SELECT (
+  '83000000-0000-0000-0000-' || lpad(gs::text, 12, '0')
+)::uuid,
+EXTRACT(EPOCH FROM NOW() - (gs || ' days')::interval)::BIGINT,
+EXTRACT(EPOCH FROM NOW())::BIGINT,
+('bulk' || gs || '@example.com'),
+('Driver ' || gs),
+('ドライバー' || gs),
+lpad(gs::text, 12, '0'),
+'Standard',
+CURRENT_DATE + INTERVAL '365 days',
+1,
+CURRENT_DATE - INTERVAL '100 days',
+CURRENT_DATE - INTERVAL '90 days',
+1, 0, 'Operations', 'Team B', NULL,
+gs * 2, gs * 10, gs * 600, CURRENT_DATE - INTERVAL '1 day',
+0.80, 0.80, 0.80,
+NULL, NULL, NULL, '{}'
+FROM generate_series(1, 60) gs
+ON CONFLICT (id) DO NOTHING;
+
+-- Measurements (60 records) referencing bulk vehicles and drivers
+INSERT INTO measurement (
+  id, created_at, updated_at, vehicle_id, area_id, driver_id, local_time, measured_at, name, data_path, distance, duration, start_location, end_location, weather_condition, road_condition
+)
+SELECT (
+  '84000000-0000-0000-0000-' || lpad(gs::text, 12, '0')
+)::uuid,
+EXTRACT(EPOCH FROM NOW() - (gs || ' hours')::interval)::BIGINT,
+EXTRACT(EPOCH FROM NOW())::BIGINT,
+(
+  '82000000-0000-0000-0000-' || lpad(((gs - 1) % 60 + 1)::text, 12, '0')
+)::uuid,
+'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid,
+(
+  '83000000-0000-0000-0000-' || lpad(((gs - 1) % 60 + 1)::text, 12, '0')
+)::uuid,
+NOW() - (gs || ' hours')::interval,
+EXTRACT(EPOCH FROM NOW())::BIGINT - gs * 1000,
+('Bulk Measurement ' || gs),
+('/data/measurements/bulk/' || gs),
+25.0 + gs,
+1800 + gs,
+NULL, NULL,
+'Clear', 'Dry'
+FROM generate_series(1, 60) gs
+ON CONFLICT (id) DO NOTHING;
+
+-- Datastreams (60 records) referencing bulk measurements
+INSERT INTO datastream (
+  id, created_at, updated_at, type, measurement_id, name, data_path, src_path, sequence_number, start_time, end_time, duration, video_url, has_data_loss, data_loss_duration, processing_status
+)
+SELECT (
+  '85000000-0000-0000-0000-' || lpad(gs::text, 12, '0')
+)::uuid,
+EXTRACT(EPOCH FROM NOW() - (gs || ' hours')::interval)::BIGINT,
+EXTRACT(EPOCH FROM NOW())::BIGINT,
+0,
+(
+  '84000000-0000-0000-0000-' || lpad(gs::text, 12, '0')
+)::uuid,
+('Bulk DS ' || gs),
+('/processed/camera/bulk_' || gs || '.mp4'),
+('/raw/camera/bulk_' || gs || '.raw'),
+1,
+NOW() - (gs || ' hours')::interval,
+NOW() - (gs || ' hours')::interval + INTERVAL '30 minutes',
+1800000,
+NULL,
+false,
+0,
+2
+FROM generate_series(1, 60) gs
+ON CONFLICT (id) DO NOTHING;
+
+-- Scenes (60 records) referencing bulk datastreams
+INSERT INTO scene (
+  id, created_at, updated_at, name, type, state, datastream_id, start_idx, end_idx, data_path
+)
+SELECT (
+  '86000000-0000-0000-0000-' || lpad(gs::text, 12, '0')
+)::uuid,
+EXTRACT(EPOCH FROM NOW() - (gs || ' hours')::interval)::BIGINT,
+EXTRACT(EPOCH FROM NOW())::BIGINT,
+('Bulk Scene ' || gs),
+(gs % 4),
+(gs % 3),
+(
+  '85000000-0000-0000-0000-' || lpad(gs::text, 12, '0')
+)::uuid,
+100,
+200 + gs,
+('/scenes/bulk/scene_' || gs || '.json')
+FROM generate_series(1, 60) gs
+ON CONFLICT (id) DO NOTHING;
+
+-- Pipelinedata (60 records) referencing bulk datastreams
+INSERT INTO pipelinedata (
+  id, created_at, updated_at, name, type, datastream_id, scene_id, source, data_path, params
+)
+SELECT (
+  '87000000-0000-0000-0000-' || lpad(gs::text, 12, '0')
+)::uuid,
+EXTRACT(EPOCH FROM NOW() - (gs || ' hours')::interval)::BIGINT,
+EXTRACT(EPOCH FROM NOW())::BIGINT,
+('Bulk PD ' || gs),
+0,
+(
+  '85000000-0000-0000-0000-' || lpad(gs::text, 12, '0')
+)::uuid,
+NULL,
+'bulk_source',
+('/data/pipelinedata/bulk_' || gs || '/'),
+'{}'
+FROM generate_series(1, 60) gs
+ON CONFLICT (id) DO NOTHING;
+
+-- Pipelinestate (60 records) referencing existing pipeline and bulk pipelinedata
+INSERT INTO pipelinestate (
+  id, created_at, updated_at, pipeline_data_id, pipeline_id, input, output, state
+)
+SELECT (
+  '88000000-0000-0000-0000-' || lpad(gs::text, 12, '0')
+)::uuid,
+EXTRACT(EPOCH FROM NOW() - (gs || ' hours')::interval)::BIGINT,
+EXTRACT(EPOCH FROM NOW())::BIGINT,
+(
+  '87000000-0000-0000-0000-' || lpad(gs::text, 12, '0')
+)::uuid,
+'44444444-4444-4444-4444-444444444441'::uuid,
+'{}', '{}', (gs % 5)
+FROM generate_series(1, 60) gs
+ON CONFLICT (id) DO NOTHING;
+
 -- Check record counts
 DO $$
 DECLARE

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -43,14 +43,14 @@ async def create_drivers(
 
 @router.get("/", response_model=BaseResponse[list[DriverResponse]])
 async def list_drivers(
-    email: str = Query(None, description="Filter by email"),
-    name: str = Query(None, description="Filter by name (partial match)"),
-    certification_level: int = Query(None, ge=0, le=3, description="Filter by certification level"),
-    status: int = Query(None, ge=0, le=3, description="Filter by status"),
-    employment_type: int = Query(None, ge=0, le=3, description="Filter by employment type"),
-    department: str = Query(None, description="Filter by department"),
-    team: str = Query(None, description="Filter by team"),
-    supervisor_id: UUID = Query(None, description="Filter by supervisor ID"),
+    email: Optional[str] = Query(None, description="Filter by email"),
+    name: Optional[str] = Query(None, description="Filter by name (partial match)"),
+    certification_level: Optional[int] = Query(None, ge=0, le=3, description="Filter by certification level"),
+    status: Optional[int] = Query(None, ge=0, le=3, description="Filter by status"),
+    employment_type: Optional[int] = Query(None, ge=0, le=3, description="Filter by employment type"),
+    department: Optional[str] = Query(None, description="Filter by department"),
+    team: Optional[str] = Query(None, description="Filter by team"),
+    supervisor_id: Optional[UUID] = Query(None, description="Filter by supervisor ID"),
     offset: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(100, ge=1, le=1000, description="Maximum number of records to return"),
     session: Session = Depends(get_session)
@@ -72,6 +72,38 @@ async def list_drivers(
         )
         drivers, total = await service.list_drivers(filters)
         return BaseResponse(success=True, data=drivers)
+    except InternalServerException as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/count", response_model=BaseResponse[dict])
+async def count_drivers(
+    email: Optional[str] = Query(None, description="Filter by email"),
+    name: Optional[str] = Query(None, description="Filter by name (partial match)"),
+    certification_level: Optional[int] = Query(None, ge=0, le=3, description="Filter by certification level"),
+    status: Optional[int] = Query(None, ge=0, le=3, description="Filter by status"),
+    employment_type: Optional[int] = Query(None, ge=0, le=3, description="Filter by employment type"),
+    department: Optional[str] = Query(None, description="Filter by department"),
+    team: Optional[str] = Query(None, description="Filter by team"),
+    supervisor_id: Optional[UUID] = Query(None, description="Filter by supervisor ID"),
+    session: Session = Depends(get_session)
+):
+    service = DriverService(session)
+    try:
+        filters = DriverFilter(
+            email=email,
+            name=name,
+            certification_level=certification_level,
+            status=status,
+            employment_type=employment_type,
+            department=department,
+            team=team,
+            supervisor_id=supervisor_id,
+            offset=0,
+            limit=1
+        )
+        total = await service.count_drivers(filters)
+        return BaseResponse(success=True, data={"count": total})
     except InternalServerException as e:
         raise HTTPException(status_code=500, detail=str(e))
 

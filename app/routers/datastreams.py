@@ -137,6 +137,43 @@ async def get_datastream_statistics(
         )
 
 
+@router.get("/count", response_model=BaseResponse[dict])
+async def count_datastreams(
+    type: Optional[int] = Query(None, ge=0, le=32767, description="Filter by type"),
+    measurement_id: Optional[UUID] = Query(None, description="Filter by measurement ID"),
+    name: Optional[str] = Query(None, description="Filter by name (partial match)"),
+    data_path: Optional[str] = Query(None, description="Filter by data path (partial match)"),
+    src_path: Optional[str] = Query(None, description="Filter by source path (partial match)"),
+    start_time: Optional[str] = Query(None, description="Filter by creation time (after)"),
+    end_time: Optional[str] = Query(None, description="Filter by creation time (before)"),
+    session: Session = Depends(get_session)
+) -> BaseResponse[dict]:
+    """
+    Return count of datastreams matching filters.
+    Accepts same filters as list endpoint (excluding pagination).
+    """
+    try:
+        filters = DataStreamFilter(
+            type=type,
+            measurement_id=measurement_id,
+            name=name,
+            data_path=data_path,
+            src_path=src_path,
+            start_time=start_time,
+            end_time=end_time,
+            limit=1,
+            offset=0,
+        )
+        service = DataStreamService(session)
+        total = await service.count_datastreams(filters)
+        return BaseResponse(success=True, data={"count": total})
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to count datastreams: {str(e)}"
+        )
+
+
 @router.get("/measurement/{measurement_id}", response_model=BaseResponse[list[DataStreamResponse]])
 async def get_datastreams_by_measurement(
     measurement_id: UUID,

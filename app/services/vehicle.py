@@ -4,6 +4,7 @@ from uuid import UUID
 from datetime import datetime
 
 from sqlmodel import Session, select, and_, or_
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.models.vehicle import VehicleModel
@@ -102,6 +103,37 @@ class VehicleService:
         except SQLAlchemyError as e:
             logger.error(f"Database error listing vehicles: {str(e)}")
             raise InternalServerException(f"Failed to list vehicles: {str(e)}")
+
+    async def count_vehicles(self, filters: VehicleFilter) -> int:
+        """Count vehicles matching filters using SELECT COUNT(*)"""
+        try:
+            statement = select(func.count()).select_from(VehicleModel)
+
+            conditions = []
+            if filters.country:
+                conditions.append(VehicleModel.country == filters.country)
+            if filters.name:
+                conditions.append(VehicleModel.name.contains(filters.name))
+            if filters.data_path:
+                conditions.append(VehicleModel.data_path.contains(filters.data_path))
+            if filters.type is not None:
+                conditions.append(VehicleModel.type == filters.type)
+            if filters.status is not None:
+                conditions.append(VehicleModel.status == filters.status)
+            if filters.start_time:
+                conditions.append(VehicleModel.created_at >= filters.start_time)
+            if filters.end_time:
+                conditions.append(VehicleModel.created_at <= filters.end_time)
+
+            if conditions:
+                statement = statement.where(and_(*conditions))
+
+            result = self.session.exec(statement).one()
+            # SQLAlchemy/SQLModel may return scalar or tuple depending on driver
+            return int(result[0] if isinstance(result, tuple) else result)
+        except SQLAlchemyError as e:
+            logger.error(f"Database error counting vehicles: {str(e)}")
+            raise InternalServerException(f"Failed to count vehicles: {str(e)}")
     
     async def update_vehicle(
         self, 

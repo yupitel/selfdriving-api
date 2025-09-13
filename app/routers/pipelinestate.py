@@ -21,6 +21,26 @@ router = APIRouter(
 )
 
 
+@router.get("/count", response_model=BaseResponse[dict])
+async def count_pipeline_states(
+    pipeline_data_id: Optional[UUID] = Query(None, description="Filter by pipeline data ID"),
+    pipeline_id: Optional[UUID] = Query(None, description="Filter by pipeline ID"),
+    state: Optional[int] = Query(None, description="Filter by state"),
+    session: Session = Depends(get_session)
+):
+    """Count pipeline states with filters"""
+    filter_params = PipelineStateFilter(
+        pipeline_data_id=pipeline_data_id,
+        pipeline_id=pipeline_id,
+        state=state,
+        offset=0,
+        limit=1
+    )
+    service = PipelineStateService(session)
+    total = await service.count_pipeline_states(filter_params)
+    return BaseResponse(success=True, data={"count": total})
+
+
 @router.post("/", response_model=BaseResponse[list[PipelineStateResponse]], status_code=status.HTTP_201_CREATED)
 async def create_pipeline_states(
     bulk_data: PipelineStateBulkCreate,

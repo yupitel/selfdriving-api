@@ -22,6 +22,30 @@ router = APIRouter(
 )
 
 
+@router.get("/count", response_model=BaseResponse[dict])
+async def count_measurements(
+    vehicle_id: Optional[UUID] = Query(None, description="Filter by vehicle ID"),
+    area_id: Optional[UUID] = Query(None, description="Filter by area ID"),
+    driver_id: Optional[UUID] = Query(None, description="Filter by driver ID"),
+    start_time: Optional[datetime] = Query(None, description="Filter by start time"),
+    end_time: Optional[datetime] = Query(None, description="Filter by end time"),
+    session: Session = Depends(get_session)
+):
+    """Return count of measurements matching filters"""
+    filter_params = MeasurementFilter(
+        vehicle_id=vehicle_id,
+        area_id=area_id,
+        driver_id=driver_id,
+        start_time=start_time,
+        end_time=end_time,
+        offset=0,
+        limit=1
+    )
+    service = MeasurementService(session)
+    total = await service.count_measurements(filter_params)
+    return BaseResponse(success=True, data={"count": total})
+
+
 @router.post("/", response_model=BaseResponse[list[MeasurementResponse]], status_code=status.HTTP_201_CREATED)
 async def create_measurements(
     bulk_data: MeasurementBulkCreate,
@@ -95,12 +119,21 @@ async def get_measurements(
     area_id: Optional[UUID] = Query(None, description="Filter by area ID"),
     start_time: Optional[datetime] = Query(None, description="Filter by start time"),
     end_time: Optional[datetime] = Query(None, description="Filter by end time"),
-    page: int = Query(1, ge=1, description="Page number"),
-    per_page: int = Query(20, ge=1, le=100, description="Items per page"),
+    # New standard params
+    limit: int = Query(100, gt=0, le=1000, description="Maximum number of records to return"),
+    offset: int = Query(0, ge=0, description="Number of records to skip"),
+    # Deprecated params maintained for compatibility
+    page: Optional[int] = Query(None, ge=1, description="[Deprecated] Page number; use limit/offset instead"),
+    per_page: Optional[int] = Query(None, ge=1, le=1000, description="[Deprecated] Items per page; use limit instead"),
     session: Session = Depends(get_session)
 ):
-    """Get measurements with filtering and pagination"""
-    offset = (page - 1) * per_page
+    """Get measurements with filtering and pagination (limit/offset). Page/per_page are deprecated."""
+    # If legacy page/per_page are provided, compute offset/limit accordingly
+    if page is not None or per_page is not None:
+        _page = page if page is not None else 1
+        _per_page = per_page if per_page is not None else limit
+        offset = (_page - 1) * _per_page
+        limit = _per_page
     
     filter_params = MeasurementFilter(
         vehicle_id=vehicle_id,
@@ -108,7 +141,7 @@ async def get_measurements(
         start_time=start_time,
         end_time=end_time,
         offset=offset,
-        limit=per_page
+        limit=limit
     )
     
     service = MeasurementService(session)
@@ -122,6 +155,9 @@ async def get_measurements(
         success=True,
         data=measurement_responses
     )
+
+
+ 
 
 
 @router.put("/{measurement_id}", response_model=BaseResponse[MeasurementResponse])

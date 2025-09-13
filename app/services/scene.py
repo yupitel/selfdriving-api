@@ -4,6 +4,7 @@ from uuid import UUID
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlmodel import Session, select, and_
+from sqlalchemy import func
 
 from app.models.scene import SceneDataModel
 from app.models.datastream import DataStreamModel
@@ -108,6 +109,34 @@ class SceneService:
         except SQLAlchemyError as e:
             logger.error(f"Database error listing scenes: {str(e)}")
             raise InternalServerException(f"Failed to list scenes: {str(e)}")
+
+    async def count_scenes(self, filters: SceneFilter) -> int:
+        """Count scenes matching filters using SELECT COUNT(*)"""
+        try:
+            statement = select(func.count()).select_from(SceneDataModel)
+
+            conditions = []
+            if filters.type is not None:
+                conditions.append(SceneDataModel.type == filters.type)
+            if filters.state is not None:
+                conditions.append(SceneDataModel.state == filters.state)
+            if filters.datastream_id is not None:
+                conditions.append(SceneDataModel.datastream_id == filters.datastream_id)
+            if filters.name:
+                conditions.append(SceneDataModel.name.contains(filters.name))
+            if filters.start_time:
+                conditions.append(SceneDataModel.created_at >= int(filters.start_time.timestamp()))
+            if filters.end_time:
+                conditions.append(SceneDataModel.created_at <= int(filters.end_time.timestamp()))
+
+            if conditions:
+                statement = statement.where(and_(*conditions))
+
+            res = self.session.exec(statement).one()
+            return int(res[0] if isinstance(res, tuple) else res)
+        except SQLAlchemyError as e:
+            logger.error(f"Database error counting scenes: {str(e)}")
+            raise InternalServerException(f"Failed to count scenes: {str(e)}")
 
     async def update_scene(self, scene_id: UUID, update_data: SceneUpdate) -> SceneDataModel:
         """Update an existing scene"""

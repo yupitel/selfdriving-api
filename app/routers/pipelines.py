@@ -146,6 +146,47 @@ async def get_pipeline_statistics(
         )
 
 
+@router.get("/count", response_model=BaseResponse[dict])
+async def count_pipelines(
+    name: Optional[str] = Query(None, description="Filter by name (partial match)"),
+    type: Optional[int] = Query(None, ge=0, le=32767, description="Filter by type"),
+    group: Optional[int] = Query(None, ge=0, le=32767, description="Filter by group"),
+    is_available: Optional[int] = Query(None, ge=0, le=1, description="Filter by availability"),
+    version: Optional[int] = Query(None, ge=0, le=32767, description="Filter by exact version"),
+    min_version: Optional[int] = Query(None, ge=0, le=32767, description="Filter by minimum version"),
+    max_version: Optional[int] = Query(None, ge=0, le=32767, description="Filter by maximum version"),
+    start_time: Optional[str] = Query(None, description="Filter by creation time (after)"),
+    end_time: Optional[str] = Query(None, description="Filter by creation time (before)"),
+    session: Session = Depends(get_session)
+) -> BaseResponse[dict]:
+    """
+    Return count of pipelines matching filters.
+    Accepts same filters as list endpoint (excluding pagination).
+    """
+    try:
+        filters = PipelineFilter(
+            name=name,
+            type=type,
+            group=group,
+            is_available=is_available,
+            version=version,
+            min_version=min_version,
+            max_version=max_version,
+            start_time=start_time,
+            end_time=end_time,
+            limit=1,
+            offset=0,
+        )
+        service = PipelineService(session)
+        total = await service.count_pipelines(filters)
+        return BaseResponse(success=True, data={"count": total})
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to count pipelines: {str(e)}"
+        )
+
+
 @router.get("/available", response_model=BaseResponse[list[PipelineResponse]])
 async def get_available_pipelines(
     limit: int = Query(100, gt=0, le=1000, description="Maximum number of results"),

@@ -131,6 +131,39 @@ async def get_vehicle_statistics(
         )
 
 
+@router.get("/count", response_model=BaseResponse[dict])
+async def count_vehicles(
+    country: Optional[str] = Query(None, description="Filter by country (exact match)"),
+    name: Optional[str] = Query(None, description="Filter by name (partial match)"),
+    data_path: Optional[str] = Query(None, description="Filter by data path (partial match)"),
+    start_time: Optional[str] = Query(None, description="Filter by creation time (after)"),
+    end_time: Optional[str] = Query(None, description="Filter by creation time (before)"),
+    session: Session = Depends(get_session)
+) -> BaseResponse[dict]:
+    """
+    Return count of vehicles matching filters.
+    Accepts same filters as list endpoint (excluding pagination).
+    """
+    try:
+        filters = VehicleFilter(
+            country=country,
+            name=name,
+            data_path=data_path,
+            start_time=start_time,
+            end_time=end_time,
+            limit=1,
+            offset=0,
+        )
+        service = VehicleService(session)
+        total = await service.count_vehicles(filters)
+        return BaseResponse(success=True, data={"count": total})
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to count vehicles: {str(e)}"
+        )
+
+
 @router.get("/country/{country}", response_model=BaseResponse[list[VehicleResponse]])
 async def get_vehicles_by_country(
     country: str,

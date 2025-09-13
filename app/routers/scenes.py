@@ -106,6 +106,38 @@ async def list_scenes(
         )
 
 
+@router.get("/count", response_model=BaseResponse[dict])
+async def count_scenes(
+    type: Optional[int] = Query(None, ge=0, le=32767, description="Filter by type"),
+    state: Optional[int] = Query(None, ge=0, le=32767, description="Filter by state"),
+    datastream_id: Optional[UUID] = Query(None, description="Filter by datastream ID"),
+    name: Optional[str] = Query(None, description="Filter by name (partial match)"),
+    start_time: Optional[str] = Query(None, description="Filter by creation time (after)"),
+    end_time: Optional[str] = Query(None, description="Filter by creation time (before)"),
+    session: Session = Depends(get_session),
+):
+    try:
+        filters = SceneFilter(
+            type=type,
+            state=state,
+            datastream_id=datastream_id,
+            name=name,
+            start_time=start_time,
+            end_time=end_time,
+            limit=1,
+            offset=0,
+            include_metadata=False,
+        )
+        service = SceneService(session)
+        total = await service.count_scenes(filters)
+        return BaseResponse(success=True, data={"count": total})
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to count scenes: {str(e)}",
+        )
+
+
 @router.get("/{scene_id}", response_model=BaseResponse[list[SceneResponse]])
 async def get_scene(scene_id: UUID, session: Session = Depends(get_session)) -> BaseResponse[list[SceneResponse]]:
     """Get scene(s) by ID as a list. Returns [] when not found."""

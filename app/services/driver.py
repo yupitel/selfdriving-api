@@ -4,6 +4,7 @@ from uuid import UUID
 from datetime import datetime, date, timedelta
 
 from sqlmodel import Session, select, and_, or_
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.models.driver import DriverModel
@@ -115,10 +116,11 @@ class DriverService:
                 statement = statement.where(and_(*conditions))
             
             # Get total count
-            count_statement = select(DriverModel)
+            count_statement = select(func.count()).select_from(DriverModel)
             if conditions:
                 count_statement = count_statement.where(and_(*conditions))
-            total = len(self.session.exec(count_statement).all())
+            total_res = self.session.exec(count_statement).one()
+            total = int(total_res[0] if isinstance(total_res, tuple) else total_res)
             
             # Apply ordering and pagination
             statement = statement.order_by(DriverModel.name)
@@ -133,6 +135,49 @@ class DriverService:
         except SQLAlchemyError as e:
             logger.error(f"Database error listing drivers: {str(e)}")
             raise InternalServerException(f"Failed to list drivers: {str(e)}")
+
+    async def count_drivers(self, filters: DriverFilter) -> int:
+        """Count drivers matching filters using SELECT COUNT(*)"""
+        try:
+            statement = select(func.count()).select_from(DriverModel)
+            conditions = []
+            if filters.email:
+                conditions.append(DriverModel.email == filters.email)
+            if filters.name:
+                conditions.append(DriverModel.name.contains(filters.name))
+            if filters.certification_level is not None:
+                conditions.append(DriverModel.certification_level == filters.certification_level)
+            if filters.status is not None:
+                conditions.append(DriverModel.status == filters.status)
+            if filters.employment_type is not None:
+                conditions.append(DriverModel.employment_type == filters.employment_type)
+            if filters.department:
+                conditions.append(DriverModel.department == filters.department)
+            if filters.team:
+                conditions.append(DriverModel.team == filters.team)
+            if filters.supervisor_id:
+                conditions.append(DriverModel.supervisor_id == filters.supervisor_id)
+            if filters.license_expiring_before:
+                conditions.append(DriverModel.license_expiry_date <= filters.license_expiring_before)
+            if filters.last_drive_after:
+                conditions.append(DriverModel.last_drive_date >= filters.last_drive_after)
+            if filters.last_drive_before:
+                conditions.append(DriverModel.last_drive_date <= filters.last_drive_before)
+            if filters.min_safety_score is not None:
+                conditions.append(DriverModel.safety_score >= filters.min_safety_score)
+            if filters.min_efficiency_score is not None:
+                conditions.append(DriverModel.efficiency_score >= filters.min_efficiency_score)
+            if filters.min_data_quality_score is not None:
+                conditions.append(DriverModel.data_quality_score >= filters.min_data_quality_score)
+
+            if conditions:
+                statement = statement.where(and_(*conditions))
+
+            res = self.session.exec(statement).one()
+            return int(res[0] if isinstance(res, tuple) else res)
+        except SQLAlchemyError as e:
+            logger.error(f"Database error counting drivers: {str(e)}")
+            raise InternalServerException(f"Failed to count drivers: {str(e)}")
     
     async def update_driver(
         self, 

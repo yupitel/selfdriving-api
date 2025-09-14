@@ -320,6 +320,36 @@ ON CONFLICT (id) DO NOTHING;
 -- =====================================================
 -- 4. SCENE TEST DATA
 -- =====================================================
+-- 3b. ENSURE EVERY MEASUREMENT HAS AT LEAST ONE DATASTREAM (helper fill)
+-- This helps UI flows (e.g., Drive detail → Scene creation) when running with partial seeds
+INSERT INTO datastream (
+  id, created_at, updated_at, type, measurement_id, name, data_path, src_path,
+  sequence_number, start_time, end_time, duration, video_url, has_data_loss, data_loss_duration, processing_status
+)
+SELECT 
+  gen_random_uuid(),
+  EXTRACT(EPOCH FROM NOW() - INTERVAL '1 hour')::BIGINT,
+  EXTRACT(EPOCH FROM NOW())::BIGINT,
+  0,                                 -- type: camera
+  m.id,
+  'Auto DS 1',
+  '/processed/camera/auto_' || substring(m.id::text, 1, 8) || '.mp4',
+  '/raw/camera/auto_' || substring(m.id::text, 1, 8) || '.raw',
+  1,
+  m.local_time,
+  m.local_time + INTERVAL '30 minutes',
+  1800000,                           -- 30 minutes in ms
+  NULL,
+  false,
+  0,
+  2                                  -- processing_status: COMPLETED
+FROM measurement m
+LEFT JOIN datastream d ON d.measurement_id = m.id
+WHERE d.id IS NULL;
+
+-- =====================================================
+-- 4. SCENE TEST DATA
+-- =====================================================
 -- Insert sample scenes within existing datastreams
 INSERT INTO scene (id, created_at, updated_at, name, type, state, datastream_id, start_idx, end_idx, data_path)
 VALUES

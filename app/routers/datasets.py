@@ -14,8 +14,16 @@ from app.schemas.dataset import (
 )
 from app.services.dataset import DatasetService
 
-router = APIRouter(prefix="/datasets", tags=["datasets"])
-
+router = APIRouter(
+    prefix="/api/v1/datasets",
+    tags=["datasets"],
+    responses={
+        404: {"description": "Not found"},
+        400: {"description": "Bad request"},
+        409: {"description": "Conflict"},
+        500: {"description": "Internal server error"}
+    }
+)
 
 @router.get("", response_model=PaginatedResponse[List[DatasetListItem]])
 async def list_datasets(

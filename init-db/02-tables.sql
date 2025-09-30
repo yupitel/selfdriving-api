@@ -446,6 +446,47 @@ COMMENT ON COLUMN pipelinedependency.updated_at IS 'Unix timestamp when the reco
 COMMENT ON COLUMN pipelinedependency.parent_id IS 'Reference to the parent pipeline state (must complete before child)';
 COMMENT ON COLUMN pipelinedependency.child_id IS 'Reference to the child pipeline state (depends on parent)';
 
+
+-- =====================================================
+-- DATASET & DATASET_MEMBER TABLE
+-- =====================================================
+CREATE TABLE IF NOT EXISTS dataset (
+    id UUID PRIMARY KEY,
+    created_at BIGINT NOT NULL,
+    updated_at BIGINT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    description VARCHAR(2000),
+    purpose VARCHAR(64),
+    status SMALLINT NOT NULL DEFAULT 0,
+    source_type SMALLINT NOT NULL DEFAULT 0,
+    file_path VARCHAR(1024),
+    file_format VARCHAR(64),
+    created_by VARCHAR(128),
+    scene_count INTEGER NOT NULL DEFAULT 0,
+    datastream_count INTEGER NOT NULL DEFAULT 0,
+    dataset_count INTEGER NOT NULL DEFAULT 0,
+    algorithm_config JSONB
+);
+
+CREATE INDEX IF NOT EXISTS idx_dataset_name ON dataset (name);
+CREATE INDEX IF NOT EXISTS idx_dataset_status ON dataset (status);
+
+CREATE TABLE IF NOT EXISTS dataset_member (
+    id UUID PRIMARY KEY,
+    created_at BIGINT NOT NULL,
+    updated_at BIGINT NOT NULL,
+    dataset_id UUID NOT NULL REFERENCES dataset(id) ON DELETE CASCADE,
+    item_type SMALLINT NOT NULL, -- 0=datastream,1=scene,2=dataset
+    item_id UUID NOT NULL,
+    meta JSONB,
+    CONSTRAINT uq_dataset_member_unique UNIQUE (dataset_id, item_type, item_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_dataset_member_dataset ON dataset_member (dataset_id);
+CREATE INDEX IF NOT EXISTS idx_dataset_member_item ON dataset_member (item_type, item_id);
+
+
+
 -- =====================================================
 -- End of Table Creation Script
 -- =====================================================

@@ -2,19 +2,25 @@
 from __future__ import annotations
 
 import logging
-from typing import List, Optional, Tuple, Set
+import json
+from typing import List, Optional, Tuple, Set, Any
 from uuid import UUID
 
-from sqlalchemy import func, and_, or_, select
+from sqlalchemy import func, and_, select
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from sqlmodel import Session
 
-from app.cores.config import SCHEMA
 from app.models.dataset import DatasetModel, DatasetMemberModel, DatasetSourceType, DatasetStatus
 from app.models.datastream import DataStreamModel
 from app.models.scene import SceneDataModel
 from app.schemas.dataset import (
     DatasetCreate, DatasetUpdate, DatasetFilter, DatasetItem, DatasetItemsAddRequest, DatasetItemsDeleteRequest,
+)
+from app.utils.exceptions import (
+    BadRequestException,
+    ConflictException,
+    InternalServerException,
+    NotFoundException,
 )
 
 logger = logging.getLogger(__name__)
@@ -25,6 +31,12 @@ class DatasetService:
         self.session = session
 
     # ---------- Helpers ----------
+
+    def _get_dataset_or_404(self, dataset_id: UUID) -> DatasetModel:
+        dataset = self.session.get(DatasetModel, dataset_id)
+        if not dataset:
+            raise NotFoundException(f"Dataset {dataset_id} not found")
+        return dataset
 
     def _touch_counts(self, dataset_id: UUID) -> None:
         """Recompute and persist member counts for a dataset."""
@@ -41,6 +53,23 @@ class DatasetService:
         ds.save()
         self.session.add(ds)
 
+    def _normalize_meta(self, value: Any) -> Optional[dict]:
+        """Normalize meta payloads to dictionary-or-None for schema validation."""
+        if value is None:
+            return None
+        if isinstance(value, dict):
+            return value
+        if isinstance(value, str):
+            stripped = value.strip()
+            if stripped == "" or stripped.lower() == "null":
+                return None
+            try:
+                parsed = json.loads(stripped)
+            except json.JSONDecodeError:
+                return None
+            return parsed if isinstance(parsed, dict) else None
+        return None
+
     def _validate_members_exist(self, items: List[DatasetItem]) -> None:
         """Ensure referenced items exist in their respective tables."""
         if not items:
@@ -50,17 +79,27 @@ class DatasetService:
         sc_ids = [i.item_id for i in items if i.item_type == 1]
         dt_ids = [i.item_id for i in items if i.item_type == 2]
 
-        def _check(model, ids, typename):
+        # Datastreams and scenes may live in external services; warn but continue if missing
+        def _warn_missing(model, ids, typename: str) -> None:
             if not ids:
                 return
-            q = select(func.count()).where(model.id.in_(ids))
-            found = self.session.exec(q).one()
-            if (found or 0) < len(set(ids)):
-                raise ValueError(f"Some {typename} IDs do not exist")  # simple msg for client
+            unique_ids = list(set(ids))
+            q = select(model.id).where(model.id.in_(unique_ids))
+            existing = {row[0] for row in self.session.exec(q).all()}
+            missing = [str(uid) for uid in unique_ids if uid not in existing]
+            if missing:
+                logger.warning("Dataset creation: missing %s references: %s", typename, missing)
 
-        _check(DataStreamModel, ds_ids, "datastream")
-        _check(SceneDataModel, sc_ids, "scene")
-        _check(DatasetModel, dt_ids, "dataset")  # allow nested
+        _warn_missing(DataStreamModel, ds_ids, "datastream")
+        _warn_missing(SceneDataModel, sc_ids, "scene")
+
+        # Nested dataset references must exist
+        if dt_ids:
+            unique_ids = list(set(dt_ids))
+            q = select(func.count()).where(DatasetModel.id.in_(unique_ids))
+            count = int(self.session.exec(q).scalar_one())
+            if count < len(unique_ids):
+                raise BadRequestException("Some dataset IDs do not exist")
 
     def _detect_cycle(self, parent_dataset_id: UUID, items: List[DatasetItem]) -> None:
         """Prevent cycles when adding nested dataset references."""
@@ -86,13 +125,27 @@ class DatasetService:
 
         for nid in nested_ids:
             if nid == parent_dataset_id or nid in ancestors:
-                raise ValueError("Adding this nested dataset would create a cycle")
+                raise BadRequestException("Adding this nested dataset would create a cycle")
 
 
     # ---------- CRUD ----------
 
     async def create(self, payload: DatasetCreate) -> DatasetModel:
-        ds = DatasetModel(
+        if payload.source_type == DatasetSourceType.EXTERNAL_FILE:
+            file_path = (payload.file_path or "").strip()
+            if not file_path:
+                raise BadRequestException("EXTERNAL_FILE datasets require a non-empty file_path")
+            if payload.items:
+                raise BadRequestException("EXTERNAL_FILE datasets do not support items")
+            payload.file_path = file_path
+        else:
+            # Normalise optional strings
+            if payload.file_path is not None and not payload.file_path.strip():
+                payload.file_path = None
+        if payload.file_format is not None and not payload.file_format.strip():
+            payload.file_format = None
+
+        dataset = DatasetModel(
             name=payload.name,
             description=payload.description,
             purpose=payload.purpose,
@@ -103,141 +156,243 @@ class DatasetService:
             algorithm_config=payload.algorithm_config,
             status=DatasetStatus.CREATING if payload.source_type == DatasetSourceType.COMPOSED else DatasetStatus.READY,
         )
-        self.session.add(ds)
-        self.session.commit()
-        self.session.refresh(ds)
 
-        # For composed datasets, validate and attach items
-        if payload.source_type == DatasetSourceType.COMPOSED and payload.items:
-            self._validate_members_exist(payload.items)
-            self._detect_cycle(ds.id, payload.items)
-            for it in payload.items:
-                self.session.add(DatasetMemberModel(dataset_id=ds.id, item_type=it.item_type, item_id=it.item_id, meta=it.meta))
-            self.session.commit()
-            self._touch_counts(ds.id)
-            self.session.commit()
-            self.session.refresh(ds)
+        try:
+            with self.session.begin():
+                self.session.add(dataset)
+                self.session.flush()  # ensure dataset.id available
 
-        # Mark ready after initial assembly
-        if ds.source_type == DatasetSourceType.COMPOSED:
-            ds.status = DatasetStatus.READY
-            self.session.add(ds)
-            self.session.commit()
-            self.session.refresh(ds)
+                if dataset.source_type == DatasetSourceType.COMPOSED:
+                    items = payload.items or []
+                    if items:
+                        self._validate_members_exist(items)
+                        self._detect_cycle(dataset.id, items)
+                        for item in items:
+                            self.session.add(
+                                DatasetMemberModel(
+                                    dataset_id=dataset.id,
+                                    item_type=item.item_type,
+                                    item_id=item.item_id,
+                                    meta=self._normalize_meta(item.meta),
+                                )
+                            )
+                        self.session.flush()
+                    self._touch_counts(dataset.id)
+                    dataset.status = DatasetStatus.READY
+                    self.session.add(dataset)
 
-        return ds
+            self.session.refresh(dataset)
+            return dataset
+        except BadRequestException:
+            self.session.rollback()
+            raise
+        except IntegrityError as exc:
+            self.session.rollback()
+            logger.warning("Dataset creation conflict: %s", exc)
+            raise ConflictException("Dataset membership already exists") from exc
+        except SQLAlchemyError as exc:
+            self.session.rollback()
+            logger.exception("Failed to create dataset: %s", exc)
+            raise InternalServerException("Failed to create dataset") from exc
 
     async def get(self, dataset_id: UUID) -> Tuple[Optional[DatasetModel], List[DatasetItem]]:
-        ds = self.session.get(DatasetModel, dataset_id)
-        if not ds:
-            return None, []
-        q = select(DatasetMemberModel).where(DatasetMemberModel.dataset_id == dataset_id).order_by(DatasetMemberModel.created_at.asc())
-        members = self.session.exec(q).all()
-        items = [DatasetItem(item_type=m.item_type, item_id=m.item_id, meta=m.meta) for m in members]
-        return ds, items
+        try:
+            dataset = self.session.get(DatasetModel, dataset_id)
+            if not dataset:
+                return None, []
+            q = (
+                select(DatasetMemberModel)
+                .where(DatasetMemberModel.dataset_id == dataset_id)
+                .order_by(DatasetMemberModel.created_at.asc())
+            )
+            members = self.session.exec(q).all()
+            items = [
+                DatasetItem(
+                    item_type=m.item_type,
+                    item_id=m.item_id,
+                    meta=self._normalize_meta(m.meta),
+                )
+                for m in members
+            ]
+            return dataset, items
+        except SQLAlchemyError as exc:
+            logger.exception("Failed to fetch dataset %s: %s", dataset_id, exc)
+            raise InternalServerException("Failed to fetch dataset") from exc
 
     async def list(self, filters: DatasetFilter) -> Tuple[List[DatasetModel], int]:
         stmt = select(DatasetModel)
-        conds = []
+        conditions = []
+
         if filters.search:
-            # ILIKE for Postgres; for generic SQL use contains
-            conds.append(DatasetModel.name.contains(filters.search))
+            term = filters.search.strip()
+            if term:
+                conditions.append(DatasetModel.name.ilike(f"%{term}%"))
         if filters.purpose:
-            conds.append(DatasetModel.purpose == filters.purpose)
+            conditions.append(DatasetModel.purpose == filters.purpose)
         if filters.status is not None:
-            conds.append(DatasetModel.status == filters.status)
+            conditions.append(DatasetModel.status == filters.status)
         if filters.source_type is not None:
-            conds.append(DatasetModel.source_type == filters.source_type)
+            conditions.append(DatasetModel.source_type == filters.source_type)
         if filters.created_by:
-            conds.append(DatasetModel.created_by == filters.created_by)
+            conditions.append(DatasetModel.created_by == filters.created_by)
         if filters.created_from:
-            conds.append(DatasetModel.created_at >= int(filters.created_from.timestamp()))
+            conditions.append(DatasetModel.created_at >= int(filters.created_from.timestamp()))
         if filters.created_to:
-            conds.append(DatasetModel.created_at <= int(filters.created_to.timestamp()))
-        if conds:
-            stmt = stmt.where(and_(*conds))
+            conditions.append(DatasetModel.created_at <= int(filters.created_to.timestamp()))
 
-        total = self.session.exec(select(func.count()).select_from(stmt.subquery())).one()
-        stmt = stmt.order_by(DatasetModel.created_at.desc()).offset((filters.page - 1) * filters.per_page).limit(filters.per_page)
-        rows = self.session.exec(stmt).all()
-        return rows, int(total or 0)
+        if conditions:
+            stmt = stmt.where(and_(*conditions))
 
-    async def update(self, dataset_id: UUID, payload: DatasetUpdate) -> Optional[DatasetModel]:
-        ds = self.session.get(DatasetModel, dataset_id)
-        if not ds:
-            return None
+        count_stmt = select(func.count()).select_from(DatasetModel)
+        if conditions:
+            count_stmt = count_stmt.where(and_(*conditions))
 
-        if payload.name is not None:
-            ds.name = payload.name
-        if payload.description is not None:
-            ds.description = payload.description
-        if payload.purpose is not None:
-            ds.purpose = payload.purpose
-        if payload.status is not None:
-            ds.status = payload.status
-        if payload.algorithm_config is not None:
-            ds.algorithm_config = payload.algorithm_config
+        try:
+            total = int(self.session.exec(count_stmt).scalar_one())
+            stmt = stmt.order_by(DatasetModel.created_at.desc()).offset((filters.page - 1) * filters.per_page).limit(filters.per_page)
+            rows = self.session.exec(stmt).all()
+            return rows, total
+        except SQLAlchemyError as exc:
+            logger.exception("Failed to list datasets: %s", exc)
+            raise InternalServerException("Failed to list datasets") from exc
 
-        self.session.add(ds)
+    async def update(self, dataset_id: UUID, payload: DatasetUpdate) -> DatasetModel:
+        dataset = self._get_dataset_or_404(dataset_id)
 
-        if payload.replace_items is not None:
-            if ds.source_type != DatasetSourceType.COMPOSED:
-                raise ValueError("Cannot modify items of an EXTERNAL_FILE dataset")
-            # Delete existing
-            self.session.exec(select(DatasetMemberModel).where(DatasetMemberModel.dataset_id == ds.id))
-            # Easiest: delete via SQL then re-insert
-            self.session.exec(
-                DatasetMemberModel.__table__.delete().where(DatasetMemberModel.dataset_id == ds.id)
-            )
-            items = payload.replace_items
-            self._validate_members_exist(items)
-            self._detect_cycle(ds.id, items)
-            for it in items:
-                self.session.add(DatasetMemberModel(dataset_id=ds.id, item_type=it.item_type, item_id=it.item_id, meta=it.meta))
-            self._touch_counts(ds.id)
+        try:
+            with self.session.begin():
+                if payload.name is not None:
+                    dataset.name = payload.name
+                if payload.description is not None:
+                    dataset.description = payload.description
+                if payload.purpose is not None:
+                    dataset.purpose = payload.purpose
+                if payload.status is not None:
+                    dataset.status = payload.status
+                if payload.algorithm_config is not None:
+                    dataset.algorithm_config = payload.algorithm_config
+                if payload.file_path is not None:
+                    cleaned = payload.file_path.strip() if payload.file_path else ""
+                    if dataset.source_type == DatasetSourceType.EXTERNAL_FILE:
+                        if not cleaned:
+                            raise BadRequestException("file_path cannot be empty for an EXTERNAL_FILE dataset")
+                        dataset.file_path = cleaned
+                    else:
+                        dataset.file_path = cleaned or None
+                if payload.file_format is not None:
+                    dataset.file_format = payload.file_format.strip() if payload.file_format else None
 
-        self.session.commit()
-        self.session.refresh(ds)
-        return ds
+                if payload.replace_items is not None:
+                    if dataset.source_type != DatasetSourceType.COMPOSED:
+                        raise BadRequestException("Cannot modify items of an EXTERNAL_FILE dataset")
+
+                    items = payload.replace_items or []
+                    if items:
+                        self._validate_members_exist(items)
+                        self._detect_cycle(dataset.id, items)
+
+                    delete_stmt = DatasetMemberModel.__table__.delete().where(
+                        DatasetMemberModel.dataset_id == dataset.id
+                    )
+                    self.session.exec(delete_stmt)
+
+                    for item in items:
+                        self.session.add(
+                            DatasetMemberModel(
+                                dataset_id=dataset.id,
+                                item_type=item.item_type,
+                                item_id=item.item_id,
+                                meta=item.meta,
+                            )
+                        )
+                    self.session.flush()
+                    self._touch_counts(dataset.id)
+
+                self.session.add(dataset)
+
+            self.session.refresh(dataset)
+            return dataset
+        except BadRequestException:
+            self.session.rollback()
+            raise
+        except IntegrityError as exc:
+            self.session.rollback()
+            logger.warning("Dataset update conflict for %s: %s", dataset_id, exc)
+            raise ConflictException("Dataset membership already exists") from exc
+        except SQLAlchemyError as exc:
+            self.session.rollback()
+            logger.exception("Failed to update dataset %s: %s", dataset_id, exc)
+            raise InternalServerException("Failed to update dataset") from exc
 
     async def add_items(self, dataset_id: UUID, req: DatasetItemsAddRequest) -> DatasetModel:
-        ds = self.session.get(DatasetModel, dataset_id)
-        if not ds:
-            raise ValueError("Dataset not found")
-        if ds.source_type != DatasetSourceType.COMPOSED:
-            raise ValueError("Cannot add items to an EXTERNAL_FILE dataset" )
+        dataset = self._get_dataset_or_404(dataset_id)
+        if dataset.source_type != DatasetSourceType.COMPOSED:
+            raise BadRequestException("Cannot add items to an EXTERNAL_FILE dataset")
 
         items = req.items or []
-        self._validate_members_exist(items)
-        self._detect_cycle(ds.id, items)
+        if not items:
+            return dataset
 
-        for it in items:
-            self.session.add(DatasetMemberModel(dataset_id=ds.id, item_type=it.item_type, item_id=it.item_id, meta=it.meta))
-        self.session.commit()
-        self._touch_counts(ds.id)
-        self.session.commit()
-        self.session.refresh(ds)
-        return ds
+        try:
+            self._validate_members_exist(items)
+            self._detect_cycle(dataset.id, items)
 
-    async def remove_items(self, dataset_id: UUID, req: DatasetItemsDeleteRequest) -> DatasetModel:
-        ds = self.session.get(DatasetModel, dataset_id)
-        if not ds:
-            raise ValueError("Dataset not found")
-        if ds.source_type != DatasetSourceType.COMPOSED:
-            raise ValueError("Cannot remove items from an EXTERNAL_FILE dataset" )
-
-        for it in (req.items or []):
-            self.session.exec(
-                DatasetMemberModel.__table__.delete().where(
-                    and_(
-                        DatasetMemberModel.dataset_id == ds.id,
-                        DatasetMemberModel.item_type == it.item_type,
-                        DatasetMemberModel.item_id == it.item_id,
+            for item in items:
+                self.session.add(
+                    DatasetMemberModel(
+                        dataset_id=dataset.id,
+                        item_type=item.item_type,
+                        item_id=item.item_id,
+                        meta=item.meta,
                     )
                 )
-            )
-        self.session.commit()
-        self._touch_counts(ds.id)
-        self.session.commit()
-        self.session.refresh(ds)
-        return ds
+
+            self.session.flush()
+            self._touch_counts(dataset.id)
+            self.session.add(dataset)
+            self.session.commit()
+            self.session.refresh(dataset)
+            return dataset
+        except BadRequestException:
+            self.session.rollback()
+            raise
+        except IntegrityError as exc:
+            self.session.rollback()
+            logger.warning("Dataset add_items conflict for %s: %s", dataset_id, exc)
+            raise ConflictException("Dataset membership already exists") from exc
+        except SQLAlchemyError as exc:
+            self.session.rollback()
+            logger.exception("Failed to add items to dataset %s: %s", dataset_id, exc)
+            raise InternalServerException("Failed to add items to dataset") from exc
+
+    async def remove_items(self, dataset_id: UUID, req: DatasetItemsDeleteRequest) -> DatasetModel:
+        dataset = self._get_dataset_or_404(dataset_id)
+        if dataset.source_type != DatasetSourceType.COMPOSED:
+            raise BadRequestException("Cannot remove items from an EXTERNAL_FILE dataset")
+
+        items = req.items or []
+        if not items:
+            return dataset
+
+        try:
+            for item in items:
+                self.session.exec(
+                    DatasetMemberModel.__table__.delete().where(
+                        and_(
+                            DatasetMemberModel.dataset_id == dataset.id,
+                            DatasetMemberModel.item_type == item.item_type,
+                            DatasetMemberModel.item_id == item.item_id,
+                        )
+                    )
+                )
+
+            self.session.flush()
+            self._touch_counts(dataset.id)
+            self.session.add(dataset)
+            self.session.commit()
+            self.session.refresh(dataset)
+            return dataset
+        except SQLAlchemyError as exc:
+            self.session.rollback()
+            logger.exception("Failed to remove items from dataset %s: %s", dataset_id, exc)
+            raise InternalServerException("Failed to remove items from dataset") from exc

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import List, Optional, Literal
+import json
 from uuid import UUID
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 
@@ -25,7 +26,25 @@ class DatasetStatusKind:
 class DatasetItem(BaseModel):
     item_type: int = Field(..., ge=0, le=2, description="0=datastream, 1=scene, 2=dataset")
     item_id: UUID
-    meta: Optional[dict] = None
+    meta: Optional[dict] = Field(default=None, description="Optional membership metadata")
+
+    @field_validator("meta", mode="before")
+    @classmethod
+    def normalize_meta(cls, value: Optional[dict]) -> Optional[dict]:
+        if value is None:
+            return None
+        if isinstance(value, dict):
+            return value
+        if isinstance(value, str):
+            stripped = value.strip()
+            if stripped == "" or stripped.lower() == "null":
+                return None
+            try:
+                parsed = json.loads(stripped)
+            except json.JSONDecodeError:
+                return None
+            return parsed if isinstance(parsed, dict) else None
+        return None
 
 
 class DatasetBase(BaseModel):
@@ -49,6 +68,8 @@ class DatasetUpdate(BaseModel):
     purpose: Optional[str] = Field(None, max_length=64)
     status: Optional[int] = Field(None, ge=0, le=3)
     algorithm_config: Optional[dict] = None
+    file_path: Optional[str] = Field(None, description="Update external dataset path")
+    file_format: Optional[str] = Field(None, description="Update dataset file format")
     # Replace all items (COMPOSED only). Use item APIs for incremental ops.
     replace_items: Optional[List[DatasetItem]] = None
 

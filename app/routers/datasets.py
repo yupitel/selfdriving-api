@@ -48,6 +48,8 @@ async def list_datasets(
             data=[DatasetListItem.model_validate(r) for r in rows],
             pagination=PaginationParams(page=page, per_page=per_page, total=total)
         )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
@@ -136,8 +138,8 @@ async def create_dataset(payload: DatasetCreate, session: Session = Depends(get_
         ds = await service.create(payload)
         ds2, items = await service.get(ds.id)
         return BaseResponse(success=True, data=DatasetDetail.model_validate({**ds2.model_dump(), "items": [it.model_dump() for it in items]}))
-    except ValueError as ve:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
@@ -146,13 +148,13 @@ async def create_dataset(payload: DatasetCreate, session: Session = Depends(get_
 async def update_dataset(dataset_id: UUID, payload: DatasetUpdate, session: Session = Depends(get_session)):
     try:
         service = DatasetService(session)
-        ds = await service.update(dataset_id, payload)
-        if not ds:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found")
+        await service.update(dataset_id, payload)
         ds2, items = await service.get(dataset_id)
+        if not ds2:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found")
         return BaseResponse(success=True, data=DatasetDetail.model_validate({**ds2.model_dump(), "items": [it.model_dump() for it in items]}))
-    except ValueError as ve:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
@@ -161,11 +163,11 @@ async def update_dataset(dataset_id: UUID, payload: DatasetUpdate, session: Sess
 async def add_items(dataset_id: UUID, req: DatasetItemsAddRequest, session: Session = Depends(get_session)):
     try:
         service = DatasetService(session)
-        ds = await service.add_items(dataset_id, req)
+        await service.add_items(dataset_id, req)
         ds2, items = await service.get(dataset_id)
         return BaseResponse(success=True, data=DatasetDetail.model_validate({**ds2.model_dump(), "items": [it.model_dump() for it in items]}))
-    except ValueError as ve:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
@@ -174,10 +176,10 @@ async def add_items(dataset_id: UUID, req: DatasetItemsAddRequest, session: Sess
 async def remove_items(dataset_id: UUID, req: DatasetItemsDeleteRequest, session: Session = Depends(get_session)):
     try:
         service = DatasetService(session)
-        ds = await service.remove_items(dataset_id, req)
+        await service.remove_items(dataset_id, req)
         ds2, items = await service.get(dataset_id)
         return BaseResponse(success=True, data=DatasetDetail.model_validate({**ds2.model_dump(), "items": [it.model_dump() for it in items]}))
-    except ValueError as ve:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))

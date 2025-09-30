@@ -23,6 +23,7 @@ from app.models.pipelinedata import PipelineDataModel
 from app.models.pipelinestate import PipelineStateModel
 from app.models.pipelinedependency import PipelineDependencyModel
 from app.models.sensor import SensorModel
+from app.models.dataset import DatasetModel, DatasetMemberModel
 
 logger = logging.getLogger(__name__)
 
@@ -116,6 +117,8 @@ def check_tables_exist():
         "pipeline",
         "scene",
         "sensor",
+        "dataset",
+        "dataset_member",
     ]
     
     missing_tables = [table for table in expected_tables if table not in existing_tables]

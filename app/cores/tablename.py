@@ -1,3 +1,4 @@
+
 # TABLE NAME
 MEASUREMENT = "measurement"
 DATASTREAM = "datastream"
@@ -10,3 +11,5 @@ PIPELINE_DATA = "pipelinedata"
 PIPELINE_STATE = "pipelinestate"
 PIPELINE_DEPENDENCY = "pipelinedependency"
 SENSOR = "sensor"
+DATASET = "dataset"
+DATASET_MEMBER = "dataset_member"

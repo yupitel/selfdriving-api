@@ -26,6 +26,10 @@ class BaseResponse(BaseModel, Generic[T]):
     @model_validator(mode="before")
     @classmethod
     def _coerce_legacy_fields(cls, values: Any):
+        if isinstance(values, BaseResponse):
+            # Allow re-validation of already-built BaseResponse instances
+            values = values.model_dump()
+
         if isinstance(values, dict):
             # Map `success` to `result` if provided
             if "success" in values and "result" not in values:

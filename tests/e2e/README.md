@@ -115,6 +115,9 @@ Comprehensive test suite for the measurement API including:
 - Performance testing
 - Filtering and pagination
 
+### 3. `dataset-api.testplan.json`
+Dataset API coverage exercising composed dataset creation, retrieval of dataset details and items, and validation failures for external datasets without required metadata.
+
 ## Running Tests
 
 ### Quick Start

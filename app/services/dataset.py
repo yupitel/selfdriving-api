@@ -219,9 +219,8 @@ class DatasetService:
             logger.exception("Failed to fetch dataset %s: %s", dataset_id, exc)
             raise InternalServerException("Failed to fetch dataset") from exc
 
-    async def list(self, filters: DatasetFilter) -> Tuple[List[DatasetModel], int]:
-        stmt = select(DatasetModel)
-        conditions = []
+    def _build_filter_conditions(self, filters: DatasetFilter) -> list:
+        conditions: list = []
 
         if filters.search:
             term = filters.search.strip()
@@ -240,6 +239,12 @@ class DatasetService:
         if filters.created_to:
             conditions.append(DatasetModel.created_at <= int(filters.created_to.timestamp()))
 
+        return conditions
+
+    async def list(self, filters: DatasetFilter) -> Tuple[List[DatasetModel], int]:
+        stmt = select(DatasetModel)
+        conditions = self._build_filter_conditions(filters)
+
         if conditions:
             stmt = stmt.where(and_(*conditions))
 
@@ -255,6 +260,18 @@ class DatasetService:
         except SQLAlchemyError as exc:
             logger.exception("Failed to list datasets: %s", exc)
             raise InternalServerException("Failed to list datasets") from exc
+
+    async def count(self, filters: DatasetFilter) -> int:
+        conditions = self._build_filter_conditions(filters)
+        count_stmt = select(func.count()).select_from(DatasetModel)
+        if conditions:
+            count_stmt = count_stmt.where(and_(*conditions))
+
+        try:
+            return int(self.session.exec(count_stmt).scalar_one())
+        except SQLAlchemyError as exc:
+            logger.exception("Failed to count datasets: %s", exc)
+            raise InternalServerException("Failed to count datasets") from exc
 
     async def update(self, dataset_id: UUID, payload: DatasetUpdate) -> DatasetModel:
         dataset = self._get_dataset_or_404(dataset_id)

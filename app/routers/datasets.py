@@ -29,6 +29,8 @@ router = APIRouter(
 async def list_datasets(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=200),
+    limit: Optional[int] = Query(None, ge=1, le=200, description="Optional page size override"),
+    offset: Optional[int] = Query(None, ge=0, description="Optional result offset"),
     search: Optional[str] = None,
     purpose: Optional[str] = None,
     status_: Optional[int] = Query(None, alias="status"),
@@ -37,8 +39,13 @@ async def list_datasets(
     session: Session = Depends(get_session)
 ):
     try:
+        effective_per_page = limit or per_page
+        effective_page = page
+        if offset is not None and effective_per_page > 0:
+            effective_page = (offset // effective_per_page) + 1
+
         filters = DatasetFilter(
-            page=page, per_page=per_page, search=search, purpose=purpose,
+            page=effective_page, per_page=effective_per_page, search=search, purpose=purpose,
             status=status_, source_type=source_type, created_by=created_by
         )
         service = DatasetService(session)
@@ -46,7 +53,7 @@ async def list_datasets(
         return PaginatedResponse[List[DatasetListItem]](
             success=True,
             data=[DatasetListItem.model_validate(r) for r in rows],
-            pagination=PaginationParams(page=page, per_page=per_page, total=total)
+            pagination=PaginationParams(page=effective_page, per_page=effective_per_page, total=total)
         )
     except HTTPException:
         raise
@@ -179,6 +186,32 @@ async def remove_items(dataset_id: UUID, req: DatasetItemsDeleteRequest, session
         await service.remove_items(dataset_id, req)
         ds2, items = await service.get(dataset_id)
         return BaseResponse(success=True, data=DatasetDetail.model_validate({**ds2.model_dump(), "items": [it.model_dump() for it in items]}))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+@router.get("/count", response_model=BaseResponse[dict[str, int]])
+async def count_datasets(
+    search: Optional[str] = None,
+    purpose: Optional[str] = None,
+    status_: Optional[int] = Query(None, alias="status"),
+    source_type: Optional[int] = None,
+    created_by: Optional[str] = None,
+    session: Session = Depends(get_session)
+):
+    try:
+        filters = DatasetFilter(
+            page=1,
+            per_page=1,
+            search=search,
+            purpose=purpose,
+            status=status_,
+            source_type=source_type,
+            created_by=created_by,
+        )
+        service = DatasetService(session)
+        total = await service.count(filters)
+        return BaseResponse(success=True, data={"count": total})
     except HTTPException:
         raise
     except Exception as e:

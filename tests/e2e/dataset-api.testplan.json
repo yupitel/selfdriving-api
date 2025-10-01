@@ -1,0 +1,132 @@
+{
+  "title": "Dataset API E2E Tests",
+  "description": "End-to-end tests for dataset creation and retrieval workflows",
+  "baseUrl": "http://localhost:8000",
+  "headers": {
+    "content-type": "application/json"
+  },
+  "preprocess": [
+    {
+      "type": "api",
+      "description": "Verify API health before running dataset tests",
+      "api": "/api/v1/health",
+      "method": "GET"
+    }
+  ],
+  "tests": [
+    {
+      "name": "Dataset Creation And Retrieval",
+      "description": "Create a composed dataset and verify detail and items endpoints",
+      "assertions": [
+        {
+          "description": "Create dataset with an existing datastream member",
+          "api": "/api/v1/datasets",
+          "method": "POST",
+          "input": {
+            "name": "E2E Dataset - camera segment",
+            "description": "Playwright generated dataset",
+            "purpose": "test",
+            "source_type": 0,
+            "items": [
+              {
+                "item_type": 0,
+                "item_id": "33333333-3333-3333-3333-333333333331"
+              }
+            ]
+          },
+          "expected": {
+            "status": 201,
+            "result": {
+              "success": true,
+              "data": {
+                "name": "E2E Dataset - camera segment",
+                "purpose": "test",
+                "source_type": 0,
+                "status": 1,
+                "datastream_count": 1,
+                "scene_count": 0,
+                "dataset_count": 0,
+                "items": [
+                  {
+                    "item_type": 0,
+                    "item_id": "33333333-3333-3333-3333-333333333331"
+                  }
+                ]
+              }
+            }
+          },
+          "postprocess": [
+            {
+              "description": "Capture dataset id",
+              "type": "capture",
+              "from": "data.id",
+              "to": "global.datasetId"
+            }
+          ]
+        },
+        {
+          "description": "Fetch dataset detail by id",
+          "api": "/api/v1/datasets/${global.datasetId}",
+          "method": "GET",
+          "expected": {
+            "status": 200,
+            "result": {
+              "success": true,
+              "data": {
+                "id": "${global.datasetId}",
+                "name": "E2E Dataset - camera segment",
+                "source_type": 0,
+                "datastream_count": 1,
+                "items": [
+                  {
+                    "item_type": 0,
+                    "item_id": "33333333-3333-3333-3333-333333333331"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "description": "List direct dataset items",
+          "api": "/api/v1/datasets/${global.datasetId}/items",
+          "method": "GET",
+          "expected": {
+            "status": 200,
+            "result": {
+              "success": true,
+              "data": [
+                {
+                  "item_type": 0,
+                  "item_id": "33333333-3333-3333-3333-333333333331"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dataset Validation Errors",
+      "description": "Ensure validation failures are surfaced with HTTP 400",
+      "assertions": [
+        {
+          "description": "Reject external dataset without file path",
+          "api": "/api/v1/datasets",
+          "method": "POST",
+          "input": {
+            "name": "E2E Dataset - external invalid",
+            "description": "Invalid external dataset missing file path",
+            "purpose": "test",
+            "source_type": 1,
+            "file_path": "",
+            "file_format": "parquet"
+          },
+          "expected": {
+            "status": 400
+          }
+        }
+      ]
+    }
+  ]
+}

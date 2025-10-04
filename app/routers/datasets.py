@@ -61,6 +61,34 @@ async def list_datasets(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
+@router.get("/count", response_model=BaseResponse[dict[str, int]])
+async def count_datasets(
+    search: Optional[str] = None,
+    purpose: Optional[str] = None,
+    status_: Optional[int] = Query(None, alias="status"),
+    source_type: Optional[int] = None,
+    created_by: Optional[str] = None,
+    session: Session = Depends(get_session)
+):
+    try:
+        filters = DatasetFilter(
+            page=1,
+            per_page=1,
+            search=search,
+            purpose=purpose,
+            status=status_,
+            source_type=source_type,
+            created_by=created_by,
+        )
+        service = DatasetService(session)
+        total = await service.count(filters)
+        return BaseResponse(success=True, data={"count": total})
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
 @router.get("/{dataset_id}", response_model=BaseResponse[DatasetDetail])
 async def get_dataset(dataset_id: UUID, session: Session = Depends(get_session)):
     try:
@@ -68,7 +96,9 @@ async def get_dataset(dataset_id: UUID, session: Session = Depends(get_session))
         ds, items = await service.get(dataset_id)
         if not ds:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found")
-        return BaseResponse(success=True, data=DatasetDetail.model_validate({**ds.model_dump(), "items": [it.model_dump() for it in items]}))
+        base = DatasetListItem.model_validate(ds)
+        detail = DatasetDetail.model_validate({**base.model_dump(), "items": [it.model_dump() for it in items]})
+        return BaseResponse(success=True, data=detail)
     except HTTPException:
         raise
     except Exception as e:
@@ -144,7 +174,9 @@ async def create_dataset(payload: DatasetCreate, session: Session = Depends(get_
         service = DatasetService(session)
         ds = await service.create(payload)
         ds2, items = await service.get(ds.id)
-        return BaseResponse(success=True, data=DatasetDetail.model_validate({**ds2.model_dump(), "items": [it.model_dump() for it in items]}))
+        base = DatasetListItem.model_validate(ds2)
+        detail = DatasetDetail.model_validate({**base.model_dump(), "items": [it.model_dump() for it in items]})
+        return BaseResponse(success=True, data=detail)
     except HTTPException:
         raise
     except Exception as e:
@@ -159,7 +191,9 @@ async def update_dataset(dataset_id: UUID, payload: DatasetUpdate, session: Sess
         ds2, items = await service.get(dataset_id)
         if not ds2:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found")
-        return BaseResponse(success=True, data=DatasetDetail.model_validate({**ds2.model_dump(), "items": [it.model_dump() for it in items]}))
+        base = DatasetListItem.model_validate(ds2)
+        detail = DatasetDetail.model_validate({**base.model_dump(), "items": [it.model_dump() for it in items]})
+        return BaseResponse(success=True, data=detail)
     except HTTPException:
         raise
     except Exception as e:
@@ -172,7 +206,9 @@ async def add_items(dataset_id: UUID, req: DatasetItemsAddRequest, session: Sess
         service = DatasetService(session)
         await service.add_items(dataset_id, req)
         ds2, items = await service.get(dataset_id)
-        return BaseResponse(success=True, data=DatasetDetail.model_validate({**ds2.model_dump(), "items": [it.model_dump() for it in items]}))
+        base = DatasetListItem.model_validate(ds2)
+        detail = DatasetDetail.model_validate({**base.model_dump(), "items": [it.model_dump() for it in items]})
+        return BaseResponse(success=True, data=detail)
     except HTTPException:
         raise
     except Exception as e:
@@ -185,33 +221,9 @@ async def remove_items(dataset_id: UUID, req: DatasetItemsDeleteRequest, session
         service = DatasetService(session)
         await service.remove_items(dataset_id, req)
         ds2, items = await service.get(dataset_id)
-        return BaseResponse(success=True, data=DatasetDetail.model_validate({**ds2.model_dump(), "items": [it.model_dump() for it in items]}))
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-@router.get("/count", response_model=BaseResponse[dict[str, int]])
-async def count_datasets(
-    search: Optional[str] = None,
-    purpose: Optional[str] = None,
-    status_: Optional[int] = Query(None, alias="status"),
-    source_type: Optional[int] = None,
-    created_by: Optional[str] = None,
-    session: Session = Depends(get_session)
-):
-    try:
-        filters = DatasetFilter(
-            page=1,
-            per_page=1,
-            search=search,
-            purpose=purpose,
-            status=status_,
-            source_type=source_type,
-            created_by=created_by,
-        )
-        service = DatasetService(session)
-        total = await service.count(filters)
-        return BaseResponse(success=True, data={"count": total})
+        base = DatasetListItem.model_validate(ds2)
+        detail = DatasetDetail.model_validate({**base.model_dump(), "items": [it.model_dump() for it in items]})
+        return BaseResponse(success=True, data=detail)
     except HTTPException:
         raise
     except Exception as e:

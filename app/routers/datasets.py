@@ -50,9 +50,40 @@ async def list_datasets(
         )
         service = DatasetService(session)
         rows, total = await service.list(filters)
+
+        def _normalize_row(row: object) -> DatasetListItem:
+            dataset_obj = row
+            if isinstance(row, tuple):
+                dataset_obj = row[0]
+
+            if hasattr(dataset_obj, "model_dump"):
+                payload = dataset_obj.model_dump()
+            elif hasattr(dataset_obj, "dict") and callable(getattr(dataset_obj, "dict")):
+                payload = dataset_obj.dict()
+            elif hasattr(dataset_obj, "_mapping"):
+                payload = dict(dataset_obj._mapping)
+            else:
+                payload = dataset_obj
+
+            if isinstance(payload, tuple) and hasattr(payload, "_fields"):
+                payload = payload._asdict()
+
+            if not isinstance(payload, dict):
+                try:
+                    payload = dict(payload)  # type: ignore[arg-type]
+                except Exception as exc:  # pragma: no cover - defensive
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail=f"Unable to normalize dataset row: {exc}",
+                    ) from exc
+
+            return DatasetListItem.model_validate(payload)
+
+        normalized = [_normalize_row(row) for row in rows]
+
         return PaginatedResponse[List[DatasetListItem]](
             success=True,
-            data=[DatasetListItem.model_validate(r) for r in rows],
+            data=normalized,
             pagination=PaginationParams(page=effective_page, per_page=effective_per_page, total=total)
         )
     except HTTPException:

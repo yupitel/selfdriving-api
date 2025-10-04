@@ -254,8 +254,13 @@ class DatasetService:
 
         try:
             total = int(self.session.exec(count_stmt).scalar_one())
-            stmt = stmt.order_by(DatasetModel.created_at.desc()).offset((filters.page - 1) * filters.per_page).limit(filters.per_page)
-            rows = self.session.exec(stmt).all()
+            stmt = (
+                stmt.order_by(DatasetModel.created_at.desc())
+                .offset((filters.page - 1) * filters.per_page)
+                .limit(filters.per_page)
+            )
+            result = self.session.exec(stmt)
+            rows = result.scalars().all()
             return rows, total
         except SQLAlchemyError as exc:
             logger.exception("Failed to list datasets: %s", exc)

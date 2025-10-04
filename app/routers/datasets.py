@@ -214,7 +214,7 @@ async def create_dataset(payload: DatasetCreate, session: Session = Depends(get_
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
-@router.patch("/{dataset_id}", response_model=BaseResponse[DatasetDetail])
+@router.put("/{dataset_id}", response_model=BaseResponse[DatasetDetail])
 async def update_dataset(dataset_id: UUID, payload: DatasetUpdate, session: Session = Depends(get_session)):
     try:
         service = DatasetService(session)

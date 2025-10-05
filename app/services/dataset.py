@@ -254,10 +254,16 @@ class DatasetService:
 
         try:
             total = int(self.session.exec(count_stmt).scalar_one())
+            limit = filters.limit if filters.limit is not None else 20
+            if limit <= 0:
+                limit = 20
+            offset = filters.offset if filters.offset is not None else 0
+            if offset < 0:
+                offset = 0
             stmt = (
                 stmt.order_by(DatasetModel.created_at.desc())
-                .offset((filters.page - 1) * filters.per_page)
-                .limit(filters.per_page)
+                .offset(offset)
+                .limit(limit)
             )
             result = self.session.exec(stmt)
             rows = result.scalars().all()

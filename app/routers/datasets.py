@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlmodel import Session
 
 from app.cores.database import get_session
-from app.schemas.base import BaseResponse, PaginatedResponse, PaginationParams
+from app.schemas.base import BaseResponse
 from app.schemas.dataset import (
     DatasetCreate, DatasetUpdate, DatasetDetail, DatasetListItem, DatasetFilter,
     DatasetItemsAddRequest, DatasetItemsDeleteRequest, DatasetItem
@@ -25,12 +25,10 @@ router = APIRouter(
     }
 )
 
-@router.get("", response_model=PaginatedResponse[List[DatasetListItem]])
+@router.get("", response_model=BaseResponse[list[DatasetListItem]])
 async def list_datasets(
-    page: int = Query(1, ge=1),
-    per_page: int = Query(20, ge=1, le=200),
-    limit: Optional[int] = Query(None, ge=1, le=200, description="Optional page size override"),
-    offset: Optional[int] = Query(None, ge=0, description="Optional result offset"),
+    limit: int = Query(20, ge=1, le=200, description="Maximum number of results"),
+    offset: int = Query(0, ge=0, description="Number of results to skip"),
     search: Optional[str] = None,
     purpose: Optional[str] = None,
     status_: Optional[int] = Query(None, alias="status"),
@@ -39,17 +37,17 @@ async def list_datasets(
     session: Session = Depends(get_session)
 ):
     try:
-        effective_per_page = limit or per_page
-        effective_page = page
-        if offset is not None and effective_per_page > 0:
-            effective_page = (offset // effective_per_page) + 1
-
         filters = DatasetFilter(
-            page=effective_page, per_page=effective_per_page, search=search, purpose=purpose,
-            status=status_, source_type=source_type, created_by=created_by
+            search=search,
+            purpose=purpose,
+            status=status_,
+            source_type=source_type,
+            created_by=created_by,
+            offset=offset,
+            limit=limit,
         )
         service = DatasetService(session)
-        rows, total = await service.list(filters)
+        rows, _total = await service.list(filters)
 
         def _normalize_row(row: object) -> DatasetListItem:
             dataset_obj = row
@@ -81,11 +79,7 @@ async def list_datasets(
 
         normalized = [_normalize_row(row) for row in rows]
 
-        return PaginatedResponse[List[DatasetListItem]](
-            success=True,
-            data=normalized,
-            pagination=PaginationParams(page=effective_page, per_page=effective_per_page, total=total)
-        )
+        return BaseResponse(success=True, data=normalized)
     except HTTPException:
         raise
     except Exception as e:
@@ -103,8 +97,8 @@ async def count_datasets(
 ):
     try:
         filters = DatasetFilter(
-            page=1,
-            per_page=1,
+            offset=0,
+            limit=1,
             search=search,
             purpose=purpose,
             status=status_,

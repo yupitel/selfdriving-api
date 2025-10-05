@@ -105,8 +105,8 @@ class DatasetFilter(BaseModel):
     created_by: Optional[str] = None
     created_from: Optional[datetime] = None
     created_to: Optional[datetime] = None
-    page: int = Field(1, ge=1)
-    per_page: int = Field(20, ge=1, le=200)
+    offset: int = Field(0, ge=0)
+    limit: int = Field(20, ge=1, le=200)
 
 
 class DatasetItemsAddRequest(BaseModel):

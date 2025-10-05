@@ -48,7 +48,7 @@ class DatasetItem(BaseModel):
 
 
 class DatasetBase(BaseModel):
-    name: str = Field(..., min_length=3, max_length=255)
+    name: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = Field(None, max_length=2000)
     purpose: Optional[str] = Field(None, max_length=64, description="training/validation/test/production etc.")
     source_type: int = Field(DatasetSourceKind.COMPOSED, ge=0, le=1)
@@ -61,9 +61,17 @@ class DatasetBase(BaseModel):
 class DatasetCreate(DatasetBase):
     items: Optional[List[DatasetItem]] = Field(default=None, description="Members if COMPOSED")
 
+    @field_validator("name")
+    @classmethod
+    def normalize_create_name(cls, value: str) -> str:
+        trimmed = value.strip()
+        if not trimmed:
+            raise ValueError("name cannot be empty")
+        return trimmed
+
 
 class DatasetUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=3, max_length=255)
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = Field(None, max_length=2000)
     purpose: Optional[str] = Field(None, max_length=64)
     status: Optional[int] = Field(None, ge=0, le=3)
@@ -72,6 +80,16 @@ class DatasetUpdate(BaseModel):
     file_format: Optional[str] = Field(None, description="Update dataset file format")
     # Replace all items (COMPOSED only). Use item APIs for incremental ops.
     replace_items: Optional[List[DatasetItem]] = None
+
+    @field_validator("name")
+    @classmethod
+    def normalize_update_name(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        trimmed = value.strip()
+        if not trimmed:
+            raise ValueError("name cannot be empty")
+        return trimmed
 
 
 class DatasetListItem(BaseModel):

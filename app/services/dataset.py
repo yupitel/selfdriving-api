@@ -205,7 +205,8 @@ class DatasetService:
                 .where(DatasetMemberModel.dataset_id == dataset_id)
                 .order_by(DatasetMemberModel.created_at.asc())
             )
-            members = self.session.exec(q).all()
+            result = self.session.exec(q)
+            members = result.scalars().all()
             items = [
                 DatasetItem(
                     item_type=m.item_type,

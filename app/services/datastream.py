@@ -1,7 +1,6 @@
 import logging
 from typing import List, Optional
 from uuid import UUID
-from datetime import datetime
 
 from sqlmodel import Session, select, and_, or_
 from sqlalchemy import func
@@ -14,6 +13,7 @@ from app.schemas.datastream import (
     DataStreamBulkCreate,
     DataStreamTypeEnum
 )
+from app.utils.datetime import ensure_utc
 from app.utils.exceptions import (
     NotFoundException,
     BadRequestException,
@@ -99,16 +99,16 @@ class DataStreamService:
                 conditions.append(DataStreamModel.pipeline_state_id == filters.pipeline_state_id)
             
             if filters.segment_start_time:
-                conditions.append(DataStreamModel.start_time >= filters.segment_start_time)
+                conditions.append(DataStreamModel.start_time >= ensure_utc(filters.segment_start_time))
             
             if filters.segment_end_time:
-                conditions.append(DataStreamModel.end_time <= filters.segment_end_time)
+                conditions.append(DataStreamModel.end_time <= ensure_utc(filters.segment_end_time))
             
             if filters.start_time:
-                conditions.append(DataStreamModel.created_at >= filters.start_time)
+                conditions.append(DataStreamModel.created_at >= ensure_utc(filters.start_time))
             
             if filters.end_time:
-                conditions.append(DataStreamModel.created_at <= filters.end_time)
+                conditions.append(DataStreamModel.created_at <= ensure_utc(filters.end_time))
             
             # Apply filters
             if conditions:
@@ -155,13 +155,13 @@ class DataStreamService:
             if filters.pipeline_state_id:
                 conditions.append(DataStreamModel.pipeline_state_id == filters.pipeline_state_id)
             if filters.segment_start_time:
-                conditions.append(DataStreamModel.start_time >= filters.segment_start_time)
+                conditions.append(DataStreamModel.start_time >= ensure_utc(filters.segment_start_time))
             if filters.segment_end_time:
-                conditions.append(DataStreamModel.end_time <= filters.segment_end_time)
+                conditions.append(DataStreamModel.end_time <= ensure_utc(filters.segment_end_time))
             if filters.start_time:
-                conditions.append(DataStreamModel.created_at >= filters.start_time)
+                conditions.append(DataStreamModel.created_at >= ensure_utc(filters.start_time))
             if filters.end_time:
-                conditions.append(DataStreamModel.created_at <= filters.end_time)
+                conditions.append(DataStreamModel.created_at <= ensure_utc(filters.end_time))
 
             if conditions:
                 statement = statement.where(and_(*conditions))
@@ -192,8 +192,7 @@ class DataStreamService:
             for field, value in update_dict.items():
                 setattr(datastream, field, value)
             
-            # Update timestamp
-            datastream.updated_at = datetime.utcnow()
+            datastream.save()
             
             # Commit changes
             self.session.add(datastream)

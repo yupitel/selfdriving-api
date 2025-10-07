@@ -2,7 +2,6 @@ import logging
 import json
 from typing import List, Optional, Dict, Any
 from uuid import UUID
-from datetime import datetime
 
 from sqlmodel import Session, select, and_, or_
 from sqlalchemy import func
@@ -15,6 +14,7 @@ from app.schemas.pipeline import (
     PipelineBulkCreate,
     PipelineTypeEnum
 )
+from app.utils.datetime import ensure_utc
 from app.utils.exceptions import (
     NotFoundException,
     BadRequestException,
@@ -89,10 +89,10 @@ class PipelineService:
                 conditions.append(PipelineModel.version <= filters.max_version)
             
             if filters.start_time:
-                conditions.append(PipelineModel.created_at >= filters.start_time)
+                conditions.append(PipelineModel.created_at >= ensure_utc(filters.start_time))
             
             if filters.end_time:
-                conditions.append(PipelineModel.created_at <= filters.end_time)
+                conditions.append(PipelineModel.created_at <= ensure_utc(filters.end_time))
             
             # Apply filters
             if conditions:
@@ -133,9 +133,9 @@ class PipelineService:
             if filters.max_version is not None:
                 conditions.append(PipelineModel.version <= filters.max_version)
             if filters.start_time:
-                conditions.append(PipelineModel.created_at >= filters.start_time)
+                conditions.append(PipelineModel.created_at >= ensure_utc(filters.start_time))
             if filters.end_time:
-                conditions.append(PipelineModel.created_at <= filters.end_time)
+                conditions.append(PipelineModel.created_at <= ensure_utc(filters.end_time))
 
             if conditions:
                 statement = statement.where(and_(*conditions))
@@ -166,8 +166,7 @@ class PipelineService:
             for field, value in update_dict.items():
                 setattr(pipeline, field, value)
             
-            # Update timestamp
-            pipeline.updated_at = datetime.utcnow()
+            pipeline.save()
             
             # Commit changes
             self.session.add(pipeline)

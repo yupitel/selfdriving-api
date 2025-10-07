@@ -32,8 +32,8 @@ class PipelineStateResponse(PipelineStateBase):
     model_config = ConfigDict(from_attributes=True)
     
     id: UUID
-    created_at: int
-    updated_at: int
+    created_at: datetime
+    updated_at: datetime
 
 
 class PipelineStateListResponse(BaseModel):
@@ -68,8 +68,8 @@ class PipelineStateDetailResponse(BaseModel):
     input: str
     output: str
     state: int
-    created_at: int
-    updated_at: int
+    created_at: datetime
+    updated_at: datetime
     
     # Related data (if needed for job management)
     pipelinedata_info: Optional[dict] = Field(None, description="Pipeline data information")

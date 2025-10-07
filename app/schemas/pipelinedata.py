@@ -36,8 +36,8 @@ class PipelineDataResponse(PipelineDataBase):
     model_config = ConfigDict(from_attributes=True)
     
     id: UUID
-    created_at: int
-    updated_at: int
+    created_at: datetime
+    updated_at: datetime
 
 
 class PipelineDataListResponse(BaseModel):

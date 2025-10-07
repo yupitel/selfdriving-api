@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional, List
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict
@@ -19,8 +20,8 @@ class PipelineDependencyUpdate(BaseModel):
 
 class PipelineDependencyResponse(PipelineDependencyBase):
     id: UUID
-    created_at: int
-    updated_at: int
+    created_at: datetime
+    updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 

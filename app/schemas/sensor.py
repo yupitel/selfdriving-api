@@ -65,8 +65,8 @@ class SensorUpdate(BaseModel):
 class SensorResponse(SensorBase):
     """Schema for Sensor response"""
     id: UUID
-    created_at: int
-    updated_at: int
+    created_at: datetime
+    updated_at: datetime
     settings_parsed: Optional[Dict[str, Any]] = Field(None, description="Parsed sensor settings")
 
     model_config = ConfigDict(from_attributes=True)
@@ -150,4 +150,3 @@ class SensorTypeEnum:
     @classmethod
     def is_valid(cls, type_value: int) -> bool:
         return 0 <= type_value <= 32767
-

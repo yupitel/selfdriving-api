@@ -1,7 +1,7 @@
 import logging
 from typing import List, Optional
 from uuid import UUID
-from datetime import datetime, date, timedelta
+from datetime import date, timedelta
 
 from sqlmodel import Session, select, and_, or_
 from sqlalchemy import func
@@ -201,8 +201,7 @@ class DriverService:
             for field, value in update_dict.items():
                 setattr(driver, field, value)
             
-            # Update timestamp
-            driver.updated_at = int(datetime.utcnow().timestamp())
+            driver.save()
             
             # Commit changes
             self.session.add(driver)

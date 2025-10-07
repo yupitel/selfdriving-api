@@ -13,6 +13,7 @@ from sqlmodel import Session
 from app.models.dataset import DatasetModel, DatasetMemberModel, DatasetSourceType, DatasetStatus
 from app.models.datastream import DataStreamModel
 from app.models.scene import SceneDataModel
+from app.utils.datetime import ensure_utc
 from app.schemas.dataset import (
     DatasetCreate,
     DatasetUpdate,
@@ -249,9 +250,9 @@ class DatasetService:
         if filters.created_by:
             conditions.append(DatasetModel.created_by == filters.created_by)
         if filters.created_from:
-            conditions.append(DatasetModel.created_at >= int(filters.created_from.timestamp()))
+            conditions.append(DatasetModel.created_at >= ensure_utc(filters.created_from))
         if filters.created_to:
-            conditions.append(DatasetModel.created_at <= int(filters.created_to.timestamp()))
+            conditions.append(DatasetModel.created_at <= ensure_utc(filters.created_to))
 
         return conditions
 

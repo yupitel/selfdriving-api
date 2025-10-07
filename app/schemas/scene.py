@@ -44,8 +44,8 @@ class SceneUpdate(BaseModel):
 class SceneResponse(SceneBase):
     """Schema for Scene response"""
     id: UUID
-    created_at: int
-    updated_at: int
+    created_at: datetime
+    updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 

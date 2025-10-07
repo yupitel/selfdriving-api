@@ -19,6 +19,7 @@ from app.schemas.scene import (
     SceneDetailResponse,
     SceneListItemResponse
 )
+from app.utils.datetime import ensure_utc
 from app.utils.exceptions import (
     NotFoundException,
     BadRequestException,
@@ -141,9 +142,9 @@ class SceneService:
             if filters.name:
                 conditions.append(SceneDataModel.name.contains(filters.name))
             if filters.start_time:
-                conditions.append(SceneDataModel.created_at >= int(filters.start_time.timestamp()))
+                conditions.append(SceneDataModel.created_at >= ensure_utc(filters.start_time))
             if filters.end_time:
-                conditions.append(SceneDataModel.created_at <= int(filters.end_time.timestamp()))
+                conditions.append(SceneDataModel.created_at <= ensure_utc(filters.end_time))
 
             if conditions:
                 statement = statement.where(and_(*conditions))
@@ -172,9 +173,9 @@ class SceneService:
             if filters.name:
                 conditions.append(SceneDataModel.name.contains(filters.name))
             if filters.start_time:
-                conditions.append(SceneDataModel.created_at >= int(filters.start_time.timestamp()))
+                conditions.append(SceneDataModel.created_at >= ensure_utc(filters.start_time))
             if filters.end_time:
-                conditions.append(SceneDataModel.created_at <= int(filters.end_time.timestamp()))
+                conditions.append(SceneDataModel.created_at <= ensure_utc(filters.end_time))
 
             if conditions:
                 statement = statement.where(and_(*conditions))
@@ -367,9 +368,9 @@ class SceneService:
                 if filters.name:
                     conditions.append(SceneDataModel.name.contains(filters.name))
                 if filters.start_time:
-                    conditions.append(SceneDataModel.created_at >= int(filters.start_time.timestamp()))
+                    conditions.append(SceneDataModel.created_at >= ensure_utc(filters.start_time))
                 if filters.end_time:
-                    conditions.append(SceneDataModel.created_at <= int(filters.end_time.timestamp()))
+                    conditions.append(SceneDataModel.created_at <= ensure_utc(filters.end_time))
                 
                 if conditions:
                     statement = statement.where(and_(*conditions))

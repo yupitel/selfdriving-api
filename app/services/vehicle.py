@@ -1,7 +1,6 @@
 import logging
 from typing import List, Optional
 from uuid import UUID
-from datetime import datetime
 
 from sqlmodel import Session, select, and_, or_
 from sqlalchemy import func
@@ -13,6 +12,7 @@ from app.schemas.vehicle import (
     VehicleFilter,
     VehicleBulkCreate
 )
+from app.utils.datetime import ensure_utc
 from app.utils.exceptions import (
     NotFoundException,
     BadRequestException,
@@ -121,9 +121,9 @@ class VehicleService:
             if filters.status is not None:
                 conditions.append(VehicleModel.status == filters.status)
             if filters.start_time:
-                conditions.append(VehicleModel.created_at >= filters.start_time)
+                conditions.append(VehicleModel.created_at >= ensure_utc(filters.start_time))
             if filters.end_time:
-                conditions.append(VehicleModel.created_at <= filters.end_time)
+                conditions.append(VehicleModel.created_at <= ensure_utc(filters.end_time))
 
             if conditions:
                 statement = statement.where(and_(*conditions))
@@ -151,8 +151,7 @@ class VehicleService:
             for field, value in update_dict.items():
                 setattr(vehicle, field, value)
             
-            # Update timestamp
-            vehicle.updated_at = datetime.utcnow()
+            vehicle.save()
             
             # Commit changes
             self.session.add(vehicle)

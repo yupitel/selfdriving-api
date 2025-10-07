@@ -1,7 +1,6 @@
 import logging
 from typing import List, Optional
 from uuid import UUID
-from datetime import datetime
 
 from sqlmodel import Session, select, and_
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -95,8 +94,7 @@ class SensorService:
             for field, value in update_dict.items():
                 setattr(sensor, field, value)
 
-            # Update timestamp stored as epoch seconds in BaseSQLModel
-            sensor.updated_at = int(datetime.utcnow().timestamp())
+            sensor.save()
 
             self.session.add(sensor)
             self.session.commit()
@@ -183,4 +181,3 @@ class SensorService:
             self.session.rollback()
             logger.error(f"Database error in bulk create sensors: {str(e)}")
             raise InternalServerException(f"Failed to bulk create sensors: {str(e)}")
-

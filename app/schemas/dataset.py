@@ -107,8 +107,8 @@ class DatasetListItem(BaseModel):
     file_path: Optional[str] = None
     file_format: Optional[str] = None
     created_by: Optional[str] = None
-    created_at: int
-    updated_at: int
+    created_at: datetime
+    updated_at: datetime
     scene_count: int
     datastream_count: int
     dataset_count: int

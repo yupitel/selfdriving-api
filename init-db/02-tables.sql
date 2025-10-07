@@ -12,8 +12,8 @@ SET search_path TO selfdriving;
 -- =====================================================
 CREATE TABLE IF NOT EXISTS vehicle (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    created_at BIGINT NOT NULL,
-    updated_at BIGINT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     country TEXT,
     name TEXT NOT NULL,
     data_path TEXT,
@@ -31,8 +31,8 @@ CREATE INDEX IF NOT EXISTS idx_vehicle_created_at ON vehicle(created_at DESC);
 -- Add comments
 COMMENT ON TABLE vehicle IS 'Vehicle information for self-driving data collection';
 COMMENT ON COLUMN vehicle.id IS 'Unique identifier for the vehicle';
-COMMENT ON COLUMN vehicle.created_at IS 'Unix timestamp when the record was created';
-COMMENT ON COLUMN vehicle.updated_at IS 'Unix timestamp when the record was last updated';
+COMMENT ON COLUMN vehicle.created_at IS 'Timestamp when the record was created (UTC)';
+COMMENT ON COLUMN vehicle.updated_at IS 'Timestamp when the record was last updated (UTC)';
 COMMENT ON COLUMN vehicle.country IS 'Country where the vehicle operates';
 COMMENT ON COLUMN vehicle.name IS 'Name of the vehicle';
 COMMENT ON COLUMN vehicle.data_path IS 'Path to vehicle-related data';
@@ -44,8 +44,8 @@ COMMENT ON COLUMN vehicle.status IS 'Vehicle status (0=INACTIVE, 1=ACTIVE, 2=MAI
 -- =====================================================
 CREATE TABLE IF NOT EXISTS measurement (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    created_at BIGINT NOT NULL,
-    updated_at BIGINT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     vehicle_id UUID NOT NULL,
     area_id UUID NOT NULL,
     driver_id UUID,
@@ -72,8 +72,8 @@ CREATE INDEX IF NOT EXISTS idx_measurement_created_at ON measurement(created_at 
 -- Add comments
 COMMENT ON TABLE measurement IS 'Measurement data from vehicles - represents a complete driving session';
 COMMENT ON COLUMN measurement.id IS 'Unique identifier for the measurement';
-COMMENT ON COLUMN measurement.created_at IS 'Unix timestamp when the record was created';
-COMMENT ON COLUMN measurement.updated_at IS 'Unix timestamp when the record was last updated';
+COMMENT ON COLUMN measurement.created_at IS 'Timestamp when the record was created (UTC)';
+COMMENT ON COLUMN measurement.updated_at IS 'Timestamp when the record was last updated (UTC)';
 COMMENT ON COLUMN measurement.vehicle_id IS 'Reference to the vehicle that made the measurement';
 COMMENT ON COLUMN measurement.area_id IS 'Reference to the area where measurement was taken';
 COMMENT ON COLUMN measurement.driver_id IS 'Reference to the driver who conducted the measurement';
@@ -93,8 +93,8 @@ COMMENT ON COLUMN measurement.road_condition IS 'Road conditions during the driv
 -- =====================================================
 CREATE TABLE IF NOT EXISTS datastream (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    created_at BIGINT NOT NULL,
-    updated_at BIGINT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     type SMALLINT NOT NULL,
     measurement_id UUID NOT NULL,
     name TEXT,
@@ -130,8 +130,8 @@ CREATE INDEX IF NOT EXISTS idx_datastream_created_at ON datastream(created_at DE
 -- Add comments
 COMMENT ON TABLE datastream IS 'Data streams representing 30-minute segments of driving data';
 COMMENT ON COLUMN datastream.id IS 'Unique identifier for the datastream';
-COMMENT ON COLUMN datastream.created_at IS 'Unix timestamp when the record was created';
-COMMENT ON COLUMN datastream.updated_at IS 'Unix timestamp when the record was last updated';
+COMMENT ON COLUMN datastream.created_at IS 'Timestamp when the record was created (UTC)';
+COMMENT ON COLUMN datastream.updated_at IS 'Timestamp when the record was last updated (UTC)';
 COMMENT ON COLUMN datastream.type IS 'Type of datastream (0=CAMERA, 1=LIDAR, 2=RADAR, 3=IMU, 4=GPS, 5=CAN, 6=ULTRASONIC, 7=THERMAL, 8=MICROPHONE, 99=OTHER)';
 COMMENT ON COLUMN datastream.measurement_id IS 'Reference to the associated measurement';
 COMMENT ON COLUMN datastream.name IS 'Name or description of the datastream';
@@ -187,8 +187,8 @@ END $$;
 -- =====================================================
 CREATE TABLE IF NOT EXISTS scene (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    created_at BIGINT NOT NULL,
-    updated_at BIGINT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     name TEXT,
     type SMALLINT NOT NULL,
     state SMALLINT NOT NULL,
@@ -215,8 +215,8 @@ CREATE INDEX IF NOT EXISTS idx_scene_data_stream_range ON scene(data_stream_id, 
 -- Add comments
 COMMENT ON TABLE scene IS 'Scene segments or events detected within datastreams';
 COMMENT ON COLUMN scene.id IS 'Unique identifier for the scene';
-COMMENT ON COLUMN scene.created_at IS 'Unix timestamp when the record was created';
-COMMENT ON COLUMN scene.updated_at IS 'Unix timestamp when the record was last updated';
+COMMENT ON COLUMN scene.created_at IS 'Timestamp when the record was created (UTC)';
+COMMENT ON COLUMN scene.updated_at IS 'Timestamp when the record was last updated (UTC)';
 COMMENT ON COLUMN scene.name IS 'Name or description of the scene (e.g., crosswalk)';
 COMMENT ON COLUMN scene.type IS 'Scene type (application-defined, 0-32767)';
 COMMENT ON COLUMN scene.state IS 'Scene state (application-defined, 0-32767)';
@@ -232,8 +232,8 @@ COMMENT ON COLUMN scene.data_path IS 'Optional path to artifacts for this scene'
 -- =====================================================
 CREATE TABLE IF NOT EXISTS driver (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    created_at BIGINT NOT NULL,
-    updated_at BIGINT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     
     -- Driver identification
     email TEXT UNIQUE,
@@ -298,8 +298,8 @@ CREATE INDEX IF NOT EXISTS idx_driver_created_at ON driver(created_at DESC);
 -- Add comments
 COMMENT ON TABLE driver IS 'Driver information for self-driving vehicle operators';
 COMMENT ON COLUMN driver.id IS 'Unique identifier for the driver';
-COMMENT ON COLUMN driver.created_at IS 'Unix timestamp when the record was created';
-COMMENT ON COLUMN driver.updated_at IS 'Unix timestamp when the record was last updated';
+COMMENT ON COLUMN driver.created_at IS 'Timestamp when the record was created (UTC)';
+COMMENT ON COLUMN driver.updated_at IS 'Timestamp when the record was last updated (UTC)';
 COMMENT ON COLUMN driver.email IS 'Driver email address';
 COMMENT ON COLUMN driver.name IS 'Full name of the driver';
 COMMENT ON COLUMN driver.name_kana IS 'Name in Katakana (for Japanese names)';
@@ -338,8 +338,8 @@ ADD CONSTRAINT fk_measurement_driver
 -- =====================================================
 CREATE TABLE IF NOT EXISTS pipeline (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    created_at BIGINT NOT NULL,
-    updated_at BIGINT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     name TEXT NOT NULL,
     type SMALLINT NOT NULL,
     "group" SMALLINT NOT NULL,  -- group is a reserved word, so we quote it
@@ -360,8 +360,8 @@ CREATE INDEX IF NOT EXISTS idx_pipeline_created_at ON pipeline(created_at DESC);
 -- Add comments
 COMMENT ON TABLE pipeline IS 'Pipeline configurations for data processing';
 COMMENT ON COLUMN pipeline.id IS 'Unique identifier for the pipeline';
-COMMENT ON COLUMN pipeline.created_at IS 'Unix timestamp when the record was created';
-COMMENT ON COLUMN pipeline.updated_at IS 'Unix timestamp when the record was last updated';
+COMMENT ON COLUMN pipeline.created_at IS 'Timestamp when the record was created (UTC)';
+COMMENT ON COLUMN pipeline.updated_at IS 'Timestamp when the record was last updated (UTC)';
 COMMENT ON COLUMN pipeline.name IS 'Name of the pipeline';
 COMMENT ON COLUMN pipeline.type IS 'Type of pipeline (0=DATA_COLLECTION, 1=DATA_PROCESSING, 2=DATA_VALIDATION, 3=ML_TRAINING, 4=ML_INFERENCE, 5=DATA_EXPORT, 6=DATA_IMPORT, 7=QUALITY_CHECK, 8=ANNOTATION, 99=OTHER)';
 COMMENT ON COLUMN pipeline."group" IS 'Pipeline group for categorization';
@@ -376,8 +376,8 @@ COMMENT ON COLUMN pipeline.params IS 'Required pipeline parameters as JSON strin
 -- =====================================================
 CREATE TABLE IF NOT EXISTS pipelinedata (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    created_at BIGINT NOT NULL,
-    updated_at BIGINT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     name TEXT,
     type SMALLINT NOT NULL,
     data_stream_id UUID,
@@ -401,8 +401,8 @@ CREATE INDEX IF NOT EXISTS idx_pipelinedata_created_at ON pipelinedata(created_a
 -- Add comments
 COMMENT ON TABLE pipelinedata IS 'Pipeline data entries for processing jobs';
 COMMENT ON COLUMN pipelinedata.id IS 'Unique identifier for the pipeline data';
-COMMENT ON COLUMN pipelinedata.created_at IS 'Unix timestamp when the record was created';
-COMMENT ON COLUMN pipelinedata.updated_at IS 'Unix timestamp when the record was last updated';
+COMMENT ON COLUMN pipelinedata.created_at IS 'Timestamp when the record was created (UTC)';
+COMMENT ON COLUMN pipelinedata.updated_at IS 'Timestamp when the record was last updated (UTC)';
 COMMENT ON COLUMN pipelinedata.name IS 'Name or description of the pipeline data';
 COMMENT ON COLUMN pipelinedata.type IS 'Type of pipeline data (0=RAW_DATA, 1=PROCESSED_DATA, 2=ANNOTATED_DATA, 3=VALIDATED_DATA, 4=TRAINING_DATA, 5=TEST_DATA, 99=OTHER)';
 COMMENT ON COLUMN pipelinedata.data_stream_id IS 'Reference to associated datastream';
@@ -423,8 +423,8 @@ ALTER TABLE IF EXISTS pipelinedata
 -- =====================================================
 CREATE TABLE IF NOT EXISTS pipelinestate (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    created_at BIGINT NOT NULL,
-    updated_at BIGINT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     pipeline_data_id UUID NOT NULL,
     pipeline_id UUID NOT NULL,
     input TEXT NOT NULL,  -- JSON string for input configuration
@@ -449,8 +449,8 @@ CREATE INDEX IF NOT EXISTS idx_pipelinestate_created_at ON pipelinestate(created
 -- Add comments
 COMMENT ON TABLE pipelinestate IS 'Pipeline execution states representing jobs';
 COMMENT ON COLUMN pipelinestate.id IS 'Unique identifier for the pipeline state';
-COMMENT ON COLUMN pipelinestate.created_at IS 'Unix timestamp when the record was created';
-COMMENT ON COLUMN pipelinestate.updated_at IS 'Unix timestamp when the record was last updated';
+COMMENT ON COLUMN pipelinestate.created_at IS 'Timestamp when the record was created (UTC)';
+COMMENT ON COLUMN pipelinestate.updated_at IS 'Timestamp when the record was last updated (UTC)';
 COMMENT ON COLUMN pipelinestate.pipeline_data_id IS 'Reference to the pipeline data being processed';
 COMMENT ON COLUMN pipelinestate.pipeline_id IS 'Reference to the pipeline configuration';
 COMMENT ON COLUMN pipelinestate.input IS 'Input configuration as JSON string';
@@ -479,8 +479,8 @@ END $$;
 -- =====================================================
 CREATE TABLE IF NOT EXISTS pipelinedependency (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    created_at BIGINT NOT NULL,
-    updated_at BIGINT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     parent_id UUID NOT NULL,
     child_id UUID NOT NULL,
     CONSTRAINT fk_pipelinedependency_parent 
@@ -503,8 +503,8 @@ CREATE INDEX IF NOT EXISTS idx_pipelinedependency_created_at ON pipelinedependen
 -- Add comments
 COMMENT ON TABLE pipelinedependency IS 'Dependencies between pipeline states (jobs)';
 COMMENT ON COLUMN pipelinedependency.id IS 'Unique identifier for the dependency';
-COMMENT ON COLUMN pipelinedependency.created_at IS 'Unix timestamp when the record was created';
-COMMENT ON COLUMN pipelinedependency.updated_at IS 'Unix timestamp when the record was last updated';
+COMMENT ON COLUMN pipelinedependency.created_at IS 'Timestamp when the record was created (UTC)';
+COMMENT ON COLUMN pipelinedependency.updated_at IS 'Timestamp when the record was last updated (UTC)';
 COMMENT ON COLUMN pipelinedependency.parent_id IS 'Reference to the parent pipeline state (must complete before child)';
 COMMENT ON COLUMN pipelinedependency.child_id IS 'Reference to the child pipeline state (depends on parent)';
 
@@ -514,8 +514,8 @@ COMMENT ON COLUMN pipelinedependency.child_id IS 'Reference to the child pipelin
 -- =====================================================
 CREATE TABLE IF NOT EXISTS dataset (
     id UUID PRIMARY KEY,
-    created_at BIGINT NOT NULL,
-    updated_at BIGINT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     name VARCHAR(255) NOT NULL,
     description VARCHAR(2000),
     purpose VARCHAR(64),
@@ -535,8 +535,8 @@ CREATE INDEX IF NOT EXISTS idx_dataset_status ON dataset (status);
 
 CREATE TABLE IF NOT EXISTS dataset_member (
     id UUID PRIMARY KEY,
-    created_at BIGINT NOT NULL,
-    updated_at BIGINT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     dataset_id UUID NOT NULL REFERENCES dataset(id) ON DELETE CASCADE,
     item_type SMALLINT, -- 1=datastream,2=scene,3=dataset; nullable for transitional members
     item_id UUID NOT NULL,

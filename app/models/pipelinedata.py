@@ -11,7 +11,7 @@ class PipelineDataModel(BaseSQLModel, table=True):
 
     name: Optional[str] = Field(default=None, nullable=True)
     type: int = Field(..., sa_column=Column(SmallInteger, nullable=False))
-    datastream_id: Optional[UUID] = Field(default=None, nullable=True)
+    data_stream_id: Optional[UUID] = Field(default=None, nullable=True)
     scene_id: Optional[UUID] = Field(default=None, nullable=True)
     source: Optional[str] = Field(default=None, nullable=True)
     data_path: Optional[str] = Field(default=None, nullable=True)

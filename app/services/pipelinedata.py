@@ -51,8 +51,8 @@ class PipelineDataService:
         if filter_params.type is not None:
             conditions.append(PipelineDataModel.type == filter_params.type)
         
-        if filter_params.datastream_id:
-            conditions.append(PipelineDataModel.datastream_id == filter_params.datastream_id)
+        if filter_params.data_stream_id:
+            conditions.append(PipelineDataModel.data_stream_id == filter_params.data_stream_id)
             
         if filter_params.scene_id:
             conditions.append(PipelineDataModel.scene_id == filter_params.scene_id)
@@ -134,8 +134,8 @@ class PipelineDataService:
             pipeline_data_entries = []
             for data in bulk_data.pipeline_data:
                 # Basic validation: must reference either a datastream or a scene
-                if not data.datastream_id and not data.scene_id:
-                    raise ValueError("Each pipeline_data item must include either datastream_id or scene_id")
+                if not data.data_stream_id and not data.scene_id:
+                    raise ValueError("Each pipeline_data item must include either data_stream_id or scene_id")
                 # Note: type is already required by schema
                 data_entry = PipelineDataModel(
                     id=uuid4(),

@@ -53,7 +53,7 @@
           "expected": {
             "status": 200,
             "result": {
-              "datastream_id": "DS001",
+              "data_stream_id": "DS001",
               "sensor_type": "lidar",
               "quality_score": 0.95,
               "processing_status": "pending"
@@ -123,7 +123,7 @@
           "input": {
             "measurements": [
               {
-                "datastream_id": "DS002",
+                "data_stream_id": "DS002",
                 "timestamp": "2025-01-25T11:00:00Z",
                 "sensor_type": "camera",
                 "data": {
@@ -135,7 +135,7 @@
                 "processing_status": "pending"
               },
               {
-                "datastream_id": "DS002",
+                "data_stream_id": "DS002",
                 "timestamp": "2025-01-25T11:00:01Z",
                 "sensor_type": "camera",
                 "data": {
@@ -147,7 +147,7 @@
                 "processing_status": "pending"
               },
               {
-                "datastream_id": "DS003",
+                "data_stream_id": "DS003",
                 "timestamp": "2025-01-25T11:00:00Z",
                 "sensor_type": "radar",
                 "data": {
@@ -177,7 +177,7 @@
           "api": "/api/v1/measurements/",
           "method": "GET",
           "input": {
-            "datastream_id": "DS002",
+            "data_stream_id": "DS002",
             "limit": 10
           },
           "expected": {

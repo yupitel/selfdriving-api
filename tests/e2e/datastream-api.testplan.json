@@ -18,7 +18,7 @@
       "api": "/api/v1/measurements/",
       "method": "POST",
       "input": {
-        "datastream_id": "DS_TEST_001",
+        "data_stream_id": "DS_TEST_001",
         "timestamp": "2025-01-26T10:00:00Z",
         "sensor_type": "lidar",
         "data": {
@@ -39,7 +39,7 @@
           "api": "/api/v1/measurements/",
           "method": "GET",
           "input": {
-            "datastream_id": "DS_TEST_001",
+            "data_stream_id": "DS_TEST_001",
             "limit": 1
           },
           "expected": {

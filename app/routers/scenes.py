@@ -43,7 +43,7 @@ async def create_scene(
 
     - type: Scene type (0-32767)
     - state: Scene state (0-32767)
-    - datastream_id: Optional associated datastream
+    - data_stream_id: Optional associated datastream
     - start_idx/end_idx: Segment indices within the stream
     """
     try:
@@ -63,7 +63,7 @@ async def create_scene(
 async def list_scenes(
     type: Optional[int] = Query(None, ge=0, le=32767, description="Filter by type"),
     state: Optional[int] = Query(None, ge=0, le=32767, description="Filter by state"),
-    datastream_id: Optional[UUID] = Query(None, description="Filter by datastream ID"),
+    data_stream_id: Optional[UUID] = Query(None, description="Filter by datastream ID"),
     vehicle_id: Optional[UUID] = Query(None, description="Filter by vehicle ID"),
     driver_id: Optional[UUID] = Query(None, description="Filter by driver ID"),
     name: Optional[str] = Query(None, description="Filter by name (partial match)"),
@@ -79,7 +79,7 @@ async def list_scenes(
         filters = SceneFilter(
             type=type,
             state=state,
-            datastream_id=datastream_id,
+            data_stream_id=data_stream_id,
             vehicle_id=vehicle_id,
             driver_id=driver_id,
             name=name,
@@ -110,7 +110,7 @@ async def list_scenes(
 async def count_scenes(
     type: Optional[int] = Query(None, ge=0, le=32767, description="Filter by type"),
     state: Optional[int] = Query(None, ge=0, le=32767, description="Filter by state"),
-    datastream_id: Optional[UUID] = Query(None, description="Filter by datastream ID"),
+    data_stream_id: Optional[UUID] = Query(None, description="Filter by datastream ID"),
     name: Optional[str] = Query(None, description="Filter by name (partial match)"),
     start_time: Optional[str] = Query(None, description="Filter by creation time (after)"),
     end_time: Optional[str] = Query(None, description="Filter by creation time (before)"),
@@ -120,7 +120,7 @@ async def count_scenes(
         filters = SceneFilter(
             type=type,
             state=state,
-            datastream_id=datastream_id,
+            data_stream_id=data_stream_id,
             name=name,
             start_time=start_time,
             end_time=end_time,

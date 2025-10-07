@@ -69,7 +69,7 @@ async def get_pipeline_data(
 @router.get("/", response_model=BaseResponse[list[PipelineDataResponse]])
 async def get_pipeline_data_list(
     type: Optional[int] = Query(None, description="Filter by type"),
-    datastream_id: Optional[UUID] = Query(None, description="Filter by datastream ID"),
+    data_stream_id: Optional[UUID] = Query(None, description="Filter by datastream ID"),
     scene_id: Optional[UUID] = Query(None, description="Filter by scene ID"),
     source: Optional[str] = Query(None, description="Filter by source"),
     page: int = Query(1, ge=1, description="Page number"),
@@ -81,7 +81,7 @@ async def get_pipeline_data_list(
     
     filter_params = PipelineDataFilter(
         type=type,
-        datastream_id=datastream_id,
+        data_stream_id=data_stream_id,
         scene_id=scene_id,
         source=source,
         offset=offset,

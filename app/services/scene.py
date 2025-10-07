@@ -50,7 +50,7 @@ class SceneService:
         except IntegrityError as e:
             self.session.rollback()
             if "foreign key" in str(e).lower():
-                raise BadRequestException("Invalid foreign key: datastream_id does not exist")
+                raise BadRequestException("Invalid foreign key: data_stream_id does not exist")
             raise ConflictException(f"Scene constraint violation: {str(e)}")
         except SQLAlchemyError as e:
             self.session.rollback()
@@ -89,8 +89,8 @@ class SceneService:
                 conditions.append(SceneDataModel.type == filters.type)
             if filters.state is not None:
                 conditions.append(SceneDataModel.state == filters.state)
-            if filters.datastream_id is not None:
-                conditions.append(SceneDataModel.datastream_id == filters.datastream_id)
+            if filters.data_stream_id is not None:
+                conditions.append(SceneDataModel.data_stream_id == filters.data_stream_id)
             if filters.name:
                 conditions.append(SceneDataModel.name.contains(filters.name))
             if filters.start_time:
@@ -120,8 +120,8 @@ class SceneService:
                 conditions.append(SceneDataModel.type == filters.type)
             if filters.state is not None:
                 conditions.append(SceneDataModel.state == filters.state)
-            if filters.datastream_id is not None:
-                conditions.append(SceneDataModel.datastream_id == filters.datastream_id)
+            if filters.data_stream_id is not None:
+                conditions.append(SceneDataModel.data_stream_id == filters.data_stream_id)
             if filters.name:
                 conditions.append(SceneDataModel.name.contains(filters.name))
             if filters.start_time:
@@ -167,7 +167,7 @@ class SceneService:
         except IntegrityError as e:
             self.session.rollback()
             if "foreign key" in str(e).lower():
-                raise BadRequestException("Invalid foreign key: datastream_id does not exist")
+                raise BadRequestException("Invalid foreign key: data_stream_id does not exist")
             raise ConflictException(f"Scene update conflict: {str(e)}")
         except SQLAlchemyError as e:
             self.session.rollback()
@@ -200,7 +200,7 @@ class SceneService:
                 )
                 .outerjoin(
                     DataStreamModel,
-                    SceneDataModel.datastream_id == DataStreamModel.id
+                    SceneDataModel.data_stream_id == DataStreamModel.id
                 )
                 .outerjoin(
                     MeasurementModel,
@@ -281,7 +281,7 @@ class SceneService:
                     )
                     .outerjoin(
                         DataStreamModel,
-                        SceneDataModel.datastream_id == DataStreamModel.id
+                        SceneDataModel.data_stream_id == DataStreamModel.id
                     )
                     .outerjoin(
                         MeasurementModel,
@@ -295,8 +295,8 @@ class SceneService:
                     conditions.append(SceneDataModel.type == filters.type)
                 if filters.state is not None:
                     conditions.append(SceneDataModel.state == filters.state)
-                if filters.datastream_id is not None:
-                    conditions.append(SceneDataModel.datastream_id == filters.datastream_id)
+                if filters.data_stream_id is not None:
+                    conditions.append(SceneDataModel.data_stream_id == filters.data_stream_id)
                 if filters.vehicle_id is not None:
                     conditions.append(MeasurementModel.vehicle_id == filters.vehicle_id)
                 if filters.driver_id is not None:

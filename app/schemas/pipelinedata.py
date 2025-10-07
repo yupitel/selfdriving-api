@@ -8,7 +8,7 @@ class PipelineDataBase(BaseModel):
     """Base pipelinedata schema"""
     name: Optional[str] = None
     type: int = Field(..., description="Type of pipeline data")
-    datastream_id: Optional[UUID] = Field(None, description="Associated datastream ID")
+    data_stream_id: Optional[UUID] = Field(None, description="Associated datastream ID")
     scene_id: Optional[UUID] = Field(None, description="Associated scene ID")
     source: Optional[str] = Field(None, description="Data source information")
     data_path: Optional[str] = Field(None, description="Path to the data file")
@@ -24,7 +24,7 @@ class PipelineDataUpdate(BaseModel):
     """Schema for updating pipeline data"""
     name: Optional[str] = None
     type: Optional[int] = Field(None, description="Type of pipeline data")
-    datastream_id: Optional[UUID] = Field(None, description="Associated datastream ID")
+    data_stream_id: Optional[UUID] = Field(None, description="Associated datastream ID")
     scene_id: Optional[UUID] = Field(None, description="Associated scene ID")
     source: Optional[str] = Field(None, description="Data source information")
     data_path: Optional[str] = Field(None, description="Path to the data file")
@@ -51,7 +51,7 @@ class PipelineDataListResponse(BaseModel):
 class PipelineDataFilter(BaseModel):
     """Schema for pipeline data filtering"""
     type: Optional[int] = None
-    datastream_id: Optional[UUID] = None
+    data_stream_id: Optional[UUID] = None
     scene_id: Optional[UUID] = None
     source: Optional[str] = None
     offset: int = 0

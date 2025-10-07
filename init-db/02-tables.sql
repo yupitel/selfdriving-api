@@ -151,12 +151,12 @@ CREATE TABLE IF NOT EXISTS scene (
     name TEXT,
     type SMALLINT NOT NULL,
     state SMALLINT NOT NULL,
-    datastream_id UUID,
+    data_stream_id UUID,
     start_idx INTEGER NOT NULL,
     end_idx INTEGER NOT NULL,
     data_path TEXT,
-    CONSTRAINT fk_scene_datastream
-        FOREIGN KEY (datastream_id)
+    CONSTRAINT fk_scene_data_stream
+        FOREIGN KEY (data_stream_id)
         REFERENCES datastream(id)
         ON DELETE SET NULL
 );
@@ -164,10 +164,10 @@ CREATE TABLE IF NOT EXISTS scene (
 -- Create indexes for scene table
 CREATE INDEX IF NOT EXISTS idx_scene_type ON scene(type);
 CREATE INDEX IF NOT EXISTS idx_scene_state ON scene(state);
-CREATE INDEX IF NOT EXISTS idx_scene_datastream_id ON scene(datastream_id);
+CREATE INDEX IF NOT EXISTS idx_scene_data_stream_id ON scene(data_stream_id);
 CREATE INDEX IF NOT EXISTS idx_scene_created_at ON scene(created_at DESC);
 -- Composite index to accelerate range queries on a datastream
-CREATE INDEX IF NOT EXISTS idx_scene_datastream_range ON scene(datastream_id, start_idx, end_idx);
+CREATE INDEX IF NOT EXISTS idx_scene_data_stream_range ON scene(data_stream_id, start_idx, end_idx);
 
 -- Add comments
 COMMENT ON TABLE scene IS 'Scene segments or events detected within datastreams';
@@ -177,7 +177,7 @@ COMMENT ON COLUMN scene.updated_at IS 'Unix timestamp when the record was last u
 COMMENT ON COLUMN scene.name IS 'Name or description of the scene (e.g., crosswalk)';
 COMMENT ON COLUMN scene.type IS 'Scene type (application-defined, 0-32767)';
 COMMENT ON COLUMN scene.state IS 'Scene state (application-defined, 0-32767)';
-COMMENT ON COLUMN scene.datastream_id IS 'Reference to the associated datastream';
+COMMENT ON COLUMN scene.data_stream_id IS 'Reference to the associated datastream';
 COMMENT ON COLUMN scene.start_idx IS 'Inclusive start index within the datastream';
 COMMENT ON COLUMN scene.end_idx IS 'Inclusive end index within the datastream';
 COMMENT ON COLUMN scene.data_path IS 'Optional path to artifacts for this scene';
@@ -335,20 +335,20 @@ CREATE TABLE IF NOT EXISTS pipelinedata (
     updated_at BIGINT NOT NULL,
     name TEXT,
     type SMALLINT NOT NULL,
-    datastream_id UUID,
+    data_stream_id UUID,
     scene_id UUID,
     source TEXT,
     data_path TEXT,
     params TEXT,  -- JSON string for parameters
-    CONSTRAINT fk_pipelinedata_datastream 
-        FOREIGN KEY (datastream_id) 
+    CONSTRAINT fk_pipelinedata_data_stream 
+        FOREIGN KEY (data_stream_id) 
         REFERENCES datastream(id) 
         ON DELETE SET NULL
 );
 
 -- Create indexes for pipelinedata table
 CREATE INDEX IF NOT EXISTS idx_pipelinedata_type ON pipelinedata(type);
-CREATE INDEX IF NOT EXISTS idx_pipelinedata_datastream_id ON pipelinedata(datastream_id);
+CREATE INDEX IF NOT EXISTS idx_pipelinedata_data_stream_id ON pipelinedata(data_stream_id);
 CREATE INDEX IF NOT EXISTS idx_pipelinedata_scene_id ON pipelinedata(scene_id);
 CREATE INDEX IF NOT EXISTS idx_pipelinedata_source ON pipelinedata(source);
 CREATE INDEX IF NOT EXISTS idx_pipelinedata_created_at ON pipelinedata(created_at DESC);
@@ -360,7 +360,7 @@ COMMENT ON COLUMN pipelinedata.created_at IS 'Unix timestamp when the record was
 COMMENT ON COLUMN pipelinedata.updated_at IS 'Unix timestamp when the record was last updated';
 COMMENT ON COLUMN pipelinedata.name IS 'Name or description of the pipeline data';
 COMMENT ON COLUMN pipelinedata.type IS 'Type of pipeline data (0=RAW_DATA, 1=PROCESSED_DATA, 2=ANNOTATED_DATA, 3=VALIDATED_DATA, 4=TRAINING_DATA, 5=TEST_DATA, 99=OTHER)';
-COMMENT ON COLUMN pipelinedata.datastream_id IS 'Reference to associated datastream';
+COMMENT ON COLUMN pipelinedata.data_stream_id IS 'Reference to associated datastream';
 COMMENT ON COLUMN pipelinedata.scene_id IS 'Reference to associated scene';
 COMMENT ON COLUMN pipelinedata.source IS 'Source information for the data';
 COMMENT ON COLUMN pipelinedata.data_path IS 'Path to the data file or directory';

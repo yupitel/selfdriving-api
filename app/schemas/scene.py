@@ -9,7 +9,7 @@ class SceneBase(BaseModel):
     name: Optional[str] = Field(None, max_length=255, description="Name of the scene segment")
     type: Optional[int] = Field(..., ge=0, le=32767, description="Scene type (application-defined, 0-32767)")
     state: Optional[int] = Field(..., ge=0, le=32767, description="Scene state (application-defined, 0-32767)")
-    datastream_id: Optional[UUID] = Field(None, description="Associated datastream ID")
+    data_stream_id: Optional[UUID] = Field(None, description="Associated datastream ID")
     start_idx: int = Field(..., ge=0, description="Inclusive start index within the stream")
     end_idx: int = Field(..., ge=0, description="Inclusive end index within the stream")
     data_path: Optional[str] = Field(None, max_length=500, description="Path to scene data or artifacts")
@@ -25,7 +25,7 @@ class SceneUpdate(BaseModel):
     name: Optional[str] = Field(None, max_length=255)
     type: Optional[int] = Field(None, ge=0, le=32767)
     state: Optional[int] = Field(None, ge=0, le=32767)
-    datastream_id: Optional[UUID] = None
+    data_stream_id: Optional[UUID] = None
     start_idx: Optional[int] = Field(None, ge=0)
     end_idx: Optional[int] = Field(None, ge=0)
     data_path: Optional[str] = Field(None, max_length=500)
@@ -82,7 +82,7 @@ class SceneFilter(BaseModel):
     """Schema for filtering Scenes"""
     type: Optional[int] = Field(None, ge=0, le=32767, description="Filter by type")
     state: Optional[int] = Field(None, ge=0, le=32767, description="Filter by state")
-    datastream_id: Optional[UUID] = Field(None, description="Filter by associated datastream ID")
+    data_stream_id: Optional[UUID] = Field(None, description="Filter by associated datastream ID")
     vehicle_id: Optional[UUID] = Field(None, description="Filter by vehicle ID")
     driver_id: Optional[UUID] = Field(None, description="Filter by driver ID")
     name: Optional[str] = Field(None, description="Filter by name (partial match)")

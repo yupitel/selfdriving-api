@@ -351,7 +351,7 @@ WHERE d.id IS NULL;
 -- 4. SCENE TEST DATA
 -- =====================================================
 -- Insert sample scenes within existing datastreams
-INSERT INTO scene (id, created_at, updated_at, name, type, state, datastream_id, start_idx, end_idx, data_path)
+INSERT INTO scene (id, created_at, updated_at, name, type, state, data_stream_id, start_idx, end_idx, data_path)
 VALUES
     -- Scenes within Tokyo Highway Segment 1
     ('88888888-8888-8888-8888-888888888801', EXTRACT(EPOCH FROM NOW() - INTERVAL '7 days')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT,
@@ -488,7 +488,7 @@ ON CONFLICT (id) DO NOTHING;
 -- =====================================================
 -- 5. PIPELINEDATA TEST DATA
 -- =====================================================
-INSERT INTO pipelinedata (id, created_at, updated_at, name, type, datastream_id, scene_id, source, data_path, params)
+INSERT INTO pipelinedata (id, created_at, updated_at, name, type, data_stream_id, scene_id, source, data_path, params)
 VALUES
     -- Raw data entries
     ('55555555-5555-5555-5555-555555555501', EXTRACT(EPOCH FROM NOW() - INTERVAL '30 days')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT,
@@ -712,7 +712,7 @@ ON CONFLICT (id) DO NOTHING;
 
 -- Scenes (60 records) referencing bulk datastreams
 INSERT INTO scene (
-  id, created_at, updated_at, name, type, state, datastream_id, start_idx, end_idx, data_path
+  id, created_at, updated_at, name, type, state, data_stream_id, start_idx, end_idx, data_path
 )
 SELECT (
   '86000000-0000-0000-0000-' || lpad(gs::text, 12, '0')
@@ -733,7 +733,7 @@ ON CONFLICT (id) DO NOTHING;
 
 -- Pipelinedata (60 records) referencing bulk datastreams
 INSERT INTO pipelinedata (
-  id, created_at, updated_at, name, type, datastream_id, scene_id, source, data_path, params
+  id, created_at, updated_at, name, type, data_stream_id, scene_id, source, data_path, params
 )
 SELECT (
   '87000000-0000-0000-0000-' || lpad(gs::text, 12, '0')

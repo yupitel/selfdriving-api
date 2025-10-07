@@ -26,7 +26,7 @@
             "name": "Crosswalk Test",
             "type": 10,
             "state": 0,
-            "datastream_id": "33333333-3333-3333-3333-333333333331",
+            "data_stream_id": "33333333-3333-3333-3333-333333333331",
             "start_idx": 10,
             "end_idx": 200,
             "data_path": "/scenes/test/crosswalk.json"
@@ -53,7 +53,7 @@
               "name": "Crosswalk Test",
               "type": 10,
               "state": 0,
-              "datastream_id": "33333333-3333-3333-3333-333333333331"
+              "data_stream_id": "33333333-3333-3333-3333-333333333331"
             }
           }
         },
@@ -78,7 +78,7 @@
           "api": "/api/v1/scenes/",
           "method": "GET",
           "input": {
-            "datastream_id": "33333333-3333-3333-3333-333333333331",
+            "data_stream_id": "33333333-3333-3333-3333-333333333331",
             "limit": 10
           },
           "expected": {
@@ -114,7 +114,7 @@
           "input": {
             "type": 1,
             "state": 0,
-            "datastream_id": "33333333-3333-3333-3333-333333333331",
+            "data_stream_id": "33333333-3333-3333-3333-333333333331",
             "start_idx": 100,
             "end_idx": 50
           },

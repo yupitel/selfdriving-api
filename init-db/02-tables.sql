@@ -538,7 +538,7 @@ CREATE TABLE IF NOT EXISTS dataset_member (
     created_at BIGINT NOT NULL,
     updated_at BIGINT NOT NULL,
     dataset_id UUID NOT NULL REFERENCES dataset(id) ON DELETE CASCADE,
-    item_type SMALLINT NOT NULL, -- 0=datastream,1=scene,2=dataset
+    item_type SMALLINT, -- 1=datastream,2=scene,3=dataset; nullable for transitional members
     item_id UUID NOT NULL,
     meta JSONB,
     CONSTRAINT uq_dataset_member_unique UNIQUE (dataset_id, item_type, item_id)

@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
@@ -15,4 +16,6 @@ class SceneDataModel(BaseSQLModel, table=True):
     data_stream_id: Optional[UUID] = Field(default=None, nullable=True)
     start_idx: int = Field(..., nullable=False)
     end_idx: int = Field(..., nullable=False)
+    start_time: Optional[datetime] = Field(default=None, nullable=True)
+    end_time: Optional[datetime] = Field(default=None, nullable=True)
     data_path: Optional[str] = Field(default=None, nullable=True)

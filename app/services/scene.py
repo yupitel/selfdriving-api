@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timedelta
 from typing import List, Optional, Union
 from uuid import UUID
 
@@ -34,6 +35,40 @@ class SceneService:
     def __init__(self, db_session: Session):
         self.session = db_session
 
+    def _resolve_scene_times(
+        self,
+        *,
+        start_idx: int,
+        end_idx: int,
+        data_stream_id: Optional[UUID],
+        provided_start: Optional[datetime],
+        provided_end: Optional[datetime],
+        existing_start: Optional[datetime] = None,
+        existing_end: Optional[datetime] = None,
+    ) -> tuple[Optional[datetime], Optional[datetime]]:
+        """Derive absolute scene timestamps using provided data or datastream metadata."""
+        start_time = provided_start if provided_start is not None else existing_start
+        end_time = provided_end if provided_end is not None else existing_end
+
+        datastream: Optional[DataStreamModel] = None
+        if data_stream_id:
+            datastream = self.session.get(DataStreamModel, data_stream_id)
+
+        base_start = datastream.start_time if datastream else None
+        if start_time is None and base_start is not None:
+            start_time = base_start + timedelta(seconds=start_idx)
+
+        if end_time is None:
+            if base_start is not None:
+                end_time = base_start + timedelta(seconds=end_idx)
+            elif start_time is not None:
+                end_time = start_time + timedelta(seconds=max(end_idx - start_idx, 0))
+
+        if start_time is not None and end_time is not None and end_time < start_time:
+            raise BadRequestException("end_time must be greater than or equal to start_time")
+
+        return start_time, end_time
+
     async def create_scene(self, scene_data: SceneCreate) -> SceneDataModel:
         """Create a new scene"""
         try:
@@ -41,7 +76,19 @@ class SceneService:
             if scene_data.end_idx < scene_data.start_idx:
                 raise BadRequestException("end_idx must be greater than or equal to start_idx")
 
-            scene = SceneDataModel(**scene_data.model_dump())
+            start_time, end_time = self._resolve_scene_times(
+                start_idx=scene_data.start_idx,
+                end_idx=scene_data.end_idx,
+                data_stream_id=scene_data.data_stream_id,
+                provided_start=scene_data.start_time,
+                provided_end=scene_data.end_time,
+            )
+
+            scene_payload = scene_data.model_dump()
+            scene_payload["start_time"] = start_time
+            scene_payload["end_time"] = end_time
+
+            scene = SceneDataModel(**scene_payload)
             self.session.add(scene)
             self.session.commit()
             self.session.refresh(scene)
@@ -154,6 +201,22 @@ class SceneService:
                 end_idx = update_dict.get("end_idx", scene.end_idx)
                 if end_idx < start_idx:
                     raise BadRequestException("end_idx must be greater than or equal to start_idx")
+            else:
+                start_idx = scene.start_idx
+                end_idx = scene.end_idx
+
+            start_time, end_time = self._resolve_scene_times(
+                start_idx=start_idx,
+                end_idx=end_idx,
+                data_stream_id=update_dict.get("data_stream_id", scene.data_stream_id),
+                provided_start=update_dict.get("start_time"),
+                provided_end=update_dict.get("end_time"),
+                existing_start=scene.start_time,
+                existing_end=scene.end_time,
+            )
+
+            update_dict["start_time"] = start_time
+            update_dict["end_time"] = end_time
 
             for field, value in update_dict.items():
                 setattr(scene, field, value)

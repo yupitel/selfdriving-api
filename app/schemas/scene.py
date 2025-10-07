@@ -12,6 +12,14 @@ class SceneBase(BaseModel):
     data_stream_id: Optional[UUID] = Field(None, description="Associated datastream ID")
     start_idx: int = Field(..., ge=0, description="Inclusive start index within the stream")
     end_idx: int = Field(..., ge=0, description="Inclusive end index within the stream")
+    start_time: Optional[datetime] = Field(
+        None,
+        description="Absolute start timestamp for the scene segment",
+    )
+    end_time: Optional[datetime] = Field(
+        None,
+        description="Absolute end timestamp for the scene segment",
+    )
     data_path: Optional[str] = Field(None, max_length=500, description="Path to scene data or artifacts")
 
 
@@ -28,6 +36,8 @@ class SceneUpdate(BaseModel):
     data_stream_id: Optional[UUID] = None
     start_idx: Optional[int] = Field(None, ge=0)
     end_idx: Optional[int] = Field(None, ge=0)
+    start_time: Optional[datetime] = Field(None, description="Absolute start timestamp for the scene segment")
+    end_time: Optional[datetime] = Field(None, description="Absolute end timestamp for the scene segment")
     data_path: Optional[str] = Field(None, max_length=500)
 
 
@@ -91,4 +101,3 @@ class SceneFilter(BaseModel):
     limit: int = Field(100, gt=0, le=1000, description="Maximum number of results")
     offset: int = Field(0, ge=0, description="Number of results to skip")
     include_metadata: bool = Field(True, description="Include vehicle/driver metadata in response")
-

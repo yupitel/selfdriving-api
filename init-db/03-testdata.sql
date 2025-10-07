@@ -351,22 +351,38 @@ WHERE d.id IS NULL;
 -- 4. SCENE TEST DATA
 -- =====================================================
 -- Insert sample scenes within existing datastreams
-INSERT INTO scene (id, created_at, updated_at, name, type, state, data_stream_id, start_idx, end_idx, data_path)
+INSERT INTO scene (id, created_at, updated_at, name, type, state, data_stream_id, start_idx, end_idx, start_time, end_time, data_path)
 VALUES
     -- Scenes within Tokyo Highway Segment 1
     ('88888888-8888-8888-8888-888888888801', EXTRACT(EPOCH FROM NOW() - INTERVAL '7 days')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT,
-     'Crosswalk', 0, 0, '33333333-3333-3333-3333-333333333331', 100, 250, '/scenes/tokyo_001_seg1/crosswalk.json'),
+     'Crosswalk', 0, 0, '33333333-3333-3333-3333-333333333331', 100, 250, NULL, NULL, '/scenes/tokyo_001_seg1/crosswalk.json'),
     ('88888888-8888-8888-8888-888888888802', EXTRACT(EPOCH FROM NOW() - INTERVAL '7 days')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT,
-     'Traffic Light Red', 1, 0, '33333333-3333-3333-3333-333333333331', 400, 450, '/scenes/tokyo_001_seg1/traffic_light_red.json'),
+     'Traffic Light Red', 1, 0, '33333333-3333-3333-3333-333333333331', 400, 450, NULL, NULL, '/scenes/tokyo_001_seg1/traffic_light_red.json'),
 
     -- Scenes within Tokyo City Segment 1
     ('88888888-8888-8888-8888-888888888803', EXTRACT(EPOCH FROM NOW() - INTERVAL '6 days')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT,
-     'Pedestrian', 2, 1, '33333333-3333-3333-3333-333333333337', 50, 70, '/scenes/tokyo_002_seg1/pedestrian.json'),
+     'Pedestrian', 2, 1, '33333333-3333-3333-3333-333333333337', 50, 70, NULL, NULL, '/scenes/tokyo_002_seg1/pedestrian.json'),
 
     -- Scene within Osaka Urban Full
     ('88888888-8888-8888-8888-888888888804', EXTRACT(EPOCH FROM NOW() - INTERVAL '4 days')::BIGINT, EXTRACT(EPOCH FROM NOW())::BIGINT,
-     'Construction', 3, 2, '33333333-3333-3333-3333-333333333340', 700, 900, '/scenes/osaka_001/construction.json')
+     'Construction', 3, 2, '33333333-3333-3333-3333-333333333340', 700, 900, NULL, NULL, '/scenes/osaka_001/construction.json')
 ON CONFLICT (id) DO NOTHING;
+
+-- Derive absolute timestamps for seeded scenes when datastream timing is available
+UPDATE scene AS s
+SET
+  start_time = COALESCE(
+    s.start_time,
+    ds.start_time + make_interval(secs => s.start_idx)
+  ),
+  end_time = COALESCE(
+    s.end_time,
+    ds.start_time + make_interval(secs => s.end_idx)
+  )
+FROM datastream AS ds
+WHERE s.data_stream_id = ds.id
+  AND (ds.start_time IS NOT NULL) -- Leave values null when datastream lacks timing metadata
+  AND (s.start_time IS NULL OR s.end_time IS NULL);
 
 -- =====================================================
 -- 4. PIPELINE TEST DATA

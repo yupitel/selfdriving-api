@@ -154,6 +154,8 @@ CREATE TABLE IF NOT EXISTS scene (
     data_stream_id UUID,
     start_idx INTEGER NOT NULL,
     end_idx INTEGER NOT NULL,
+    start_time TIMESTAMP,
+    end_time TIMESTAMP,
     data_path TEXT,
     CONSTRAINT fk_scene_data_stream
         FOREIGN KEY (data_stream_id)
@@ -180,6 +182,8 @@ COMMENT ON COLUMN scene.state IS 'Scene state (application-defined, 0-32767)';
 COMMENT ON COLUMN scene.data_stream_id IS 'Reference to the associated datastream';
 COMMENT ON COLUMN scene.start_idx IS 'Inclusive start index within the datastream';
 COMMENT ON COLUMN scene.end_idx IS 'Inclusive end index within the datastream';
+COMMENT ON COLUMN scene.start_time IS 'Absolute start timestamp for the scene segment';
+COMMENT ON COLUMN scene.end_time IS 'Absolute end timestamp for the scene segment';
 COMMENT ON COLUMN scene.data_path IS 'Optional path to artifacts for this scene';
 
 -- =====================================================

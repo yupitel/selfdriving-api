@@ -14,7 +14,13 @@ from app.models.dataset import DatasetModel, DatasetMemberModel, DatasetSourceTy
 from app.models.datastream import DataStreamModel
 from app.models.scene import SceneDataModel
 from app.schemas.dataset import (
-    DatasetCreate, DatasetUpdate, DatasetFilter, DatasetItem, DatasetItemsAddRequest, DatasetItemsDeleteRequest,
+    DatasetCreate,
+    DatasetUpdate,
+    DatasetFilter,
+    DatasetItem,
+    DatasetItemsAddRequest,
+    DatasetItemsDeleteRequest,
+    DatasetItemKind,
 )
 from app.utils.exceptions import (
     BadRequestException,
@@ -45,11 +51,15 @@ class DatasetService:
             return
 
         # Count by type
-        q = select(DatasetMemberModel.item_type, func.count()).where(DatasetMemberModel.dataset_id == dataset_id).group_by(DatasetMemberModel.item_type)
-        counts = {row[0]: row[1] for row in self.session.exec(q).all()}
-        ds.datastream_count = counts.get(0, 0)
-        ds.scene_count = counts.get(1, 0)
-        ds.dataset_count = counts.get(2, 0)
+        q = (
+            select(DatasetMemberModel.item_type, func.count())
+            .where(DatasetMemberModel.dataset_id == dataset_id)
+            .group_by(DatasetMemberModel.item_type)
+        )
+        counts = {row[0]: row[1] for row in self.session.exec(q).all() if row[0] is not None}
+        ds.datastream_count = counts.get(DatasetItemKind.DATASTREAM, 0)
+        ds.scene_count = counts.get(DatasetItemKind.SCENE, 0)
+        ds.dataset_count = counts.get(DatasetItemKind.DATASET, 0)
         ds.save()
         self.session.add(ds)
 
@@ -75,9 +85,9 @@ class DatasetService:
         if not items:
             return
         # Group by type
-        ds_ids = [i.item_id for i in items if i.item_type == 0]
-        sc_ids = [i.item_id for i in items if i.item_type == 1]
-        dt_ids = [i.item_id for i in items if i.item_type == 2]
+        ds_ids = [i.item_id for i in items if i.item_type == DatasetItemKind.DATASTREAM]
+        sc_ids = [i.item_id for i in items if i.item_type == DatasetItemKind.SCENE]
+        dt_ids = [i.item_id for i in items if i.item_type == DatasetItemKind.DATASET]
 
         # Datastreams and scenes may live in external services; warn but continue if missing
         def _warn_missing(model, ids, typename: str) -> None:
@@ -103,7 +113,7 @@ class DatasetService:
 
     def _detect_cycle(self, parent_dataset_id: UUID, items: List[DatasetItem]) -> None:
         """Prevent cycles when adding nested dataset references."""
-        nested_ids = [i.item_id for i in items if i.item_type == 2]
+        nested_ids = [i.item_id for i in items if i.item_type == DatasetItemKind.DATASET]
         if not nested_ids:
             return
 
@@ -113,7 +123,10 @@ class DatasetService:
         def collect_ancestors(target_id: UUID) -> None:
             # Find datasets that contain target_id (reverse membership)
             q = select(DatasetMemberModel.dataset_id).where(
-                and_(DatasetMemberModel.item_type == 2, DatasetMemberModel.item_id == target_id)
+                and_(
+                    DatasetMemberModel.item_type == DatasetItemKind.DATASET,
+                    DatasetMemberModel.item_id == target_id,
+                )
             )
             parents = [row[0] for row in self.session.exec(q).all()]
             for pid in parents:

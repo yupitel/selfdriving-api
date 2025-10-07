@@ -9,8 +9,15 @@ from sqlmodel import Session
 from app.cores.database import get_session
 from app.schemas.base import BaseResponse
 from app.schemas.dataset import (
-    DatasetCreate, DatasetUpdate, DatasetDetail, DatasetListItem, DatasetFilter,
-    DatasetItemsAddRequest, DatasetItemsDeleteRequest, DatasetItem
+    DatasetCreate,
+    DatasetUpdate,
+    DatasetDetail,
+    DatasetListItem,
+    DatasetFilter,
+    DatasetItemsAddRequest,
+    DatasetItemsDeleteRequest,
+    DatasetItem,
+    DatasetItemKind,
 )
 from app.services.dataset import DatasetService
 
@@ -134,7 +141,7 @@ async def get_dataset(dataset_id: UUID, session: Session = Depends(get_session))
 async def list_items(
     dataset_id: UUID,
     resolve: Literal["direct", "leaf", "all"] = Query("direct", description="direct: children only, leaf: recurse to scene/datastream, all: include nested datasets too"),
-    item_type: Optional[int] = Query(None, ge=0, le=2, description="optional filter by 0=datastream,1=scene,2=dataset"),
+    item_type: Optional[int] = Query(None, ge=1, le=3, description="optional filter by 1=datastream,2=scene,3=dataset"),
     dedupe: bool = Query(False, description="deduplicate by (item_type, item_id)"),
     session: Session = Depends(get_session),
 ):
@@ -178,7 +185,7 @@ async def list_items(
             if not ds:
                 return
             for it in items:
-                if it.item_type == 2:  # dataset
+                if it.item_type == DatasetItemKind.DATASET:
                     if resolve == "all":
                         out.append(it)
                     await dfs(it.item_id)

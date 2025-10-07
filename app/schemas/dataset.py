@@ -8,9 +8,9 @@ from uuid import UUID
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 
 class DatasetItemKind:
-    DATASTREAM = 0
-    SCENE = 1
-    DATASET = 2
+    DATASTREAM = 1
+    SCENE = 2
+    DATASET = 3
 
 class DatasetSourceKind:
     COMPOSED = 0
@@ -24,7 +24,12 @@ class DatasetStatusKind:
 
 
 class DatasetItem(BaseModel):
-    item_type: int = Field(..., ge=0, le=2, description="0=datastream, 1=scene, 2=dataset")
+    item_type: Optional[int] = Field(
+        None,
+        ge=1,
+        le=3,
+        description="1=datastream, 2=scene, 3=dataset; null permitted for untyped entries",
+    )
     item_id: UUID
     meta: Optional[dict] = Field(default=None, description="Optional membership metadata")
 

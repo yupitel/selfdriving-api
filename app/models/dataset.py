@@ -73,8 +73,8 @@ class DatasetMemberModel(BaseSQLModel, table=True):
     dataset_id: UUID = Field(
         sa_column=Column(ForeignKey(f"{SCHEMA}.{DATASET}.id", ondelete="CASCADE"), nullable=False, index=True)
     )
-    # 0=datastream, 1=scene, 2=dataset
-    item_type: int = Field(sa_column=Column(SmallInteger, nullable=False, index=True))
+    # 1=datastream, 2=scene, 3=dataset. Nullable for legacy/unknown entries.
+    item_type: Optional[int] = Field(sa_column=Column(SmallInteger, nullable=True, index=True))
     item_id: UUID = Field(nullable=False, index=True)
 
     # Optional metadata per membership (weighting, notes, etc.)

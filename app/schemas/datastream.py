@@ -19,6 +19,10 @@ class DataStreamBase(BaseModel):
     has_data_loss: bool = Field(False, description="Whether data loss occurred in this segment")
     data_loss_duration: Optional[int] = Field(None, ge=0, description="Duration of data loss in milliseconds")
     processing_status: int = Field(0, ge=0, le=3, description="Processing status (0=PENDING, 1=PROCESSING, 2=COMPLETED, 3=FAILED)")
+    state: Optional[int] = Field(None, ge=0, description="Custom state indicator for the datastream")
+    frame_count: Optional[int] = Field(None, ge=0, description="Total number of frames captured for this segment")
+    valid_frame_count: Optional[int] = Field(None, ge=0, description="Number of frames without data loss in this segment")
+    pipeline_state_id: Optional[UUID] = Field(None, description="Pipeline state identifier when generated via pipeline")
 
 
 class DataStreamCreate(DataStreamBase):
@@ -41,6 +45,10 @@ class DataStreamUpdate(BaseModel):
     has_data_loss: Optional[bool] = Field(None, description="Whether data loss occurred in this segment")
     data_loss_duration: Optional[int] = Field(None, ge=0, description="Duration of data loss in milliseconds")
     processing_status: Optional[int] = Field(None, ge=0, le=3, description="Processing status (0=PENDING, 1=PROCESSING, 2=COMPLETED, 3=FAILED)")
+    state: Optional[int] = Field(None, ge=0, description="Custom state indicator for the datastream")
+    frame_count: Optional[int] = Field(None, ge=0, description="Total number of frames captured for this segment")
+    valid_frame_count: Optional[int] = Field(None, ge=0, description="Number of frames without data loss in this segment")
+    pipeline_state_id: Optional[UUID] = Field(None, description="Pipeline state identifier when generated via pipeline")
 
 
 class DataStreamResponse(DataStreamBase):
@@ -62,6 +70,8 @@ class DataStreamFilter(BaseModel):
     sequence_number: Optional[int] = Field(None, ge=1, description="Filter by sequence number")
     processing_status: Optional[int] = Field(None, ge=0, le=3, description="Filter by processing status")
     has_data_loss: Optional[bool] = Field(None, description="Filter by data loss flag")
+    state: Optional[int] = Field(None, ge=0, description="Filter by custom datastream state")
+    pipeline_state_id: Optional[UUID] = Field(None, description="Filter by pipeline state identifier")
     segment_start_time: Optional[datetime] = Field(None, description="Filter by segment start time (after)")
     segment_end_time: Optional[datetime] = Field(None, description="Filter by segment end time (before)")
     start_time: Optional[datetime] = Field(None, description="Filter by creation time (after)")

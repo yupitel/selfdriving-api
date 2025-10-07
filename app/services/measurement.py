@@ -1,7 +1,7 @@
 import logging
 from typing import List, Optional
 from uuid import UUID, uuid4
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from sqlmodel import Session, select, and_
 from sqlalchemy import func
@@ -222,13 +222,40 @@ class MeasurementService:
             
             # Calculate aggregate processing status
             processing_status = self._calculate_processing_status(datastreams)
-            
+
+            # Determine datastream time bounds for session level metadata
+            earliest_start: Optional[datetime] = None
+            latest_end: Optional[datetime] = None
+            for stream in datastreams:
+                if stream.start_time:
+                    earliest_start = (
+                        stream.start_time
+                        if earliest_start is None or stream.start_time < earliest_start
+                        else earliest_start
+                    )
+
+                potential_end: Optional[datetime] = stream.end_time
+                if potential_end is None and stream.start_time and stream.duration:
+                    try:
+                        potential_end = stream.start_time + timedelta(milliseconds=stream.duration)
+                    except OverflowError:
+                        potential_end = None
+
+                if potential_end:
+                    latest_end = (
+                        potential_end
+                        if latest_end is None or potential_end > latest_end
+                        else latest_end
+                    )
+
             # Create detail response
             detail_response = MeasurementDetailResponse(
                 **measurement.__dict__,
                 datastreams=datastreams,
                 total_segments=len(datastreams),
-                processing_status=processing_status
+                processing_status=processing_status,
+                datastream_start_time=earliest_start,
+                datastream_end_time=latest_end,
             )
             
             logger.info(f"Retrieved measurement detail for {measurement_id} with {len(datastreams)} datastreams")

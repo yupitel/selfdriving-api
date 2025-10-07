@@ -87,6 +87,14 @@ class MeasurementDetailResponse(MeasurementResponse):
     datastreams: Optional[List[DataStreamResponse]] = Field(default_factory=list, description="Associated datastreams")
     total_segments: int = Field(0, description="Total number of datastream segments")
     processing_status: str = Field("pending", description="Aggregate processing status")
+    datastream_start_time: Optional[datetime] = Field(
+        default=None,
+        description="Earliest start time across associated datastreams",
+    )
+    datastream_end_time: Optional[datetime] = Field(
+        default=None,
+        description="Latest end time across associated datastreams",
+    )
 
 
 class MeasurementBulkCreate(BaseModel):

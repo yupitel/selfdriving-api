@@ -69,6 +69,8 @@ async def list_datastreams(
     name: Optional[str] = Query(None, description="Filter by name (partial match)"),
     data_path: Optional[str] = Query(None, description="Filter by data path (partial match)"),
     src_path: Optional[str] = Query(None, description="Filter by source path (partial match)"),
+    state: Optional[int] = Query(None, ge=0, description="Filter by datastream state"),
+    pipeline_state_id: Optional[UUID] = Query(None, description="Filter by pipeline state identifier"),
     start_time: Optional[str] = Query(None, description="Filter by creation time (after)"),
     end_time: Optional[str] = Query(None, description="Filter by creation time (before)"),
     limit: int = Query(100, gt=0, le=1000, description="Maximum number of results"),
@@ -99,6 +101,8 @@ async def list_datastreams(
             src_path=src_path,
             start_time=start_time,
             end_time=end_time,
+            state=state,
+            pipeline_state_id=pipeline_state_id,
             limit=limit,
             offset=offset
         )
@@ -144,6 +148,8 @@ async def count_datastreams(
     name: Optional[str] = Query(None, description="Filter by name (partial match)"),
     data_path: Optional[str] = Query(None, description="Filter by data path (partial match)"),
     src_path: Optional[str] = Query(None, description="Filter by source path (partial match)"),
+    state: Optional[int] = Query(None, ge=0, description="Filter by datastream state"),
+    pipeline_state_id: Optional[UUID] = Query(None, description="Filter by pipeline state identifier"),
     start_time: Optional[str] = Query(None, description="Filter by creation time (after)"),
     end_time: Optional[str] = Query(None, description="Filter by creation time (before)"),
     session: Session = Depends(get_session)
@@ -161,6 +167,8 @@ async def count_datastreams(
             src_path=src_path,
             start_time=start_time,
             end_time=end_time,
+            state=state,
+            pipeline_state_id=pipeline_state_id,
             limit=1,
             offset=0,
         )

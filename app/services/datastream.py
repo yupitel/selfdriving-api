@@ -88,9 +88,15 @@ class DataStreamService:
             
             if filters.processing_status is not None:
                 conditions.append(DataStreamModel.processing_status == filters.processing_status)
-            
+
             if filters.has_data_loss is not None:
                 conditions.append(DataStreamModel.has_data_loss == filters.has_data_loss)
+
+            if filters.state is not None:
+                conditions.append(DataStreamModel.state == filters.state)
+
+            if filters.pipeline_state_id:
+                conditions.append(DataStreamModel.pipeline_state_id == filters.pipeline_state_id)
             
             if filters.segment_start_time:
                 conditions.append(DataStreamModel.start_time >= filters.segment_start_time)
@@ -144,6 +150,10 @@ class DataStreamService:
                 conditions.append(DataStreamModel.processing_status == filters.processing_status)
             if filters.has_data_loss is not None:
                 conditions.append(DataStreamModel.has_data_loss == filters.has_data_loss)
+            if filters.state is not None:
+                conditions.append(DataStreamModel.state == filters.state)
+            if filters.pipeline_state_id:
+                conditions.append(DataStreamModel.pipeline_state_id == filters.pipeline_state_id)
             if filters.segment_start_time:
                 conditions.append(DataStreamModel.start_time >= filters.segment_start_time)
             if filters.segment_end_time:

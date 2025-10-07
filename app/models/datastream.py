@@ -6,7 +6,7 @@ from app.cores.tablename import DATASTREAM
 from app.models.base import BaseSQLModel
 
 from sqlmodel import Field, Column
-from sqlalchemy import SmallInteger, Integer, Boolean
+from sqlalchemy import SmallInteger, Integer, Boolean, BigInteger
 
 class DataStreamModel(BaseSQLModel, table=True):
     __tablename__ = DATASTREAM
@@ -25,3 +25,7 @@ class DataStreamModel(BaseSQLModel, table=True):
     has_data_loss: bool = Field(default=False, sa_column=Column(Boolean, nullable=False, default=False))
     data_loss_duration: Optional[int] = Field(default=None, nullable=True)  # Data loss duration in milliseconds
     processing_status: int = Field(default=0, sa_column=Column(SmallInteger, nullable=False, default=0))  # 0=PENDING, 1=PROCESSING, 2=COMPLETED, 3=FAILED
+    state: Optional[int] = Field(default=None, sa_column=Column(SmallInteger, nullable=True))
+    frame_count: Optional[int] = Field(default=None, sa_column=Column(BigInteger, nullable=True))
+    valid_frame_count: Optional[int] = Field(default=None, sa_column=Column(BigInteger, nullable=True))
+    pipeline_state_id: Optional[UUID] = Field(default=None, foreign_key="pipelinestate.id", nullable=True)

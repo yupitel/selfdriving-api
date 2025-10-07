@@ -108,6 +108,10 @@ CREATE TABLE IF NOT EXISTS datastream (
     has_data_loss BOOLEAN DEFAULT FALSE,
     data_loss_duration BIGINT,  -- Data loss duration in milliseconds
     processing_status SMALLINT DEFAULT 0,  -- 0=PENDING, 1=PROCESSING, 2=COMPLETED, 3=FAILED
+    state SMALLINT, -- Custom state indicator for pipeline/status tracking
+    frame_count BIGINT, -- Total frame count captured for this datastream
+    valid_frame_count BIGINT, -- Frame count excluding data loss
+    pipeline_state_id UUID, -- Reference to pipeline state record when generated via pipeline
     CONSTRAINT fk_datastream_measurement 
         FOREIGN KEY (measurement_id) 
         REFERENCES measurement(id) 
@@ -120,6 +124,7 @@ CREATE INDEX IF NOT EXISTS idx_datastream_measurement_id ON datastream(measureme
 CREATE INDEX IF NOT EXISTS idx_datastream_measurement_sequence ON datastream(measurement_id, sequence_number);
 CREATE INDEX IF NOT EXISTS idx_datastream_name ON datastream(name);
 CREATE INDEX IF NOT EXISTS idx_datastream_processing_status ON datastream(processing_status);
+CREATE INDEX IF NOT EXISTS idx_datastream_pipeline_state_id ON datastream(pipeline_state_id);
 CREATE INDEX IF NOT EXISTS idx_datastream_created_at ON datastream(created_at DESC);
 
 -- Add comments
@@ -140,6 +145,42 @@ COMMENT ON COLUMN datastream.video_url IS 'URL to the video file for this segmen
 COMMENT ON COLUMN datastream.has_data_loss IS 'Whether data loss occurred in this segment';
 COMMENT ON COLUMN datastream.data_loss_duration IS 'Duration of data loss in milliseconds';
 COMMENT ON COLUMN datastream.processing_status IS 'Processing status (0=PENDING, 1=PROCESSING, 2=COMPLETED, 3=FAILED)';
+COMMENT ON COLUMN datastream.state IS 'Custom state indicator for the datastream lifecycle';
+COMMENT ON COLUMN datastream.frame_count IS 'Total number of frames captured for this datastream';
+COMMENT ON COLUMN datastream.valid_frame_count IS 'Number of frames without data loss';
+COMMENT ON COLUMN datastream.pipeline_state_id IS 'Reference to the originating pipeline state when applicable';
+
+-- Ensure new datastream columns exist when applying to an existing database
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'datastream' AND column_name = 'state'
+    ) THEN
+        ALTER TABLE datastream ADD COLUMN state SMALLINT;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'datastream' AND column_name = 'frame_count'
+    ) THEN
+        ALTER TABLE datastream ADD COLUMN frame_count BIGINT;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'datastream' AND column_name = 'valid_frame_count'
+    ) THEN
+        ALTER TABLE datastream ADD COLUMN valid_frame_count BIGINT;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'datastream' AND column_name = 'pipeline_state_id'
+    ) THEN
+        ALTER TABLE datastream ADD COLUMN pipeline_state_id UUID;
+    END IF;
+END $$;
 
 -- =====================================================
 -- 4. SCENE TABLE
@@ -415,6 +456,23 @@ COMMENT ON COLUMN pipelinestate.pipeline_id IS 'Reference to the pipeline config
 COMMENT ON COLUMN pipelinestate.input IS 'Input configuration as JSON string';
 COMMENT ON COLUMN pipelinestate.output IS 'Output results as JSON string';
 COMMENT ON COLUMN pipelinestate.state IS 'Execution state (0=PENDING, 1=RUNNING, 2=COMPLETED, 3=FAILED, 4=CANCELLED, 5=PAUSED)';
+
+-- Maintain referential integrity from datastreams to pipeline states when available
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.table_constraints
+        WHERE constraint_name = 'fk_datastream_pipeline_state'
+          AND table_name = 'datastream'
+    ) THEN
+        ALTER TABLE datastream
+            ADD CONSTRAINT fk_datastream_pipeline_state
+            FOREIGN KEY (pipeline_state_id)
+            REFERENCES pipelinestate(id)
+            ON DELETE SET NULL;
+    END IF;
+END $$;
 
 -- =====================================================
 -- 8. PIPELINEDEPENDENCY TABLE

@@ -26,10 +26,10 @@
             "name": "E2E Dataset - camera segment",
             "description": "Playwright generated dataset",
             "purpose": "test",
-            "source_type": 0,
+            "source_type": 1,
             "items": [
               {
-                "item_type": 0,
+                "item_type": 1,
                 "item_id": "33333333-3333-3333-3333-333333333331"
               }
             ]
@@ -41,14 +41,14 @@
               "data": {
                 "name": "E2E Dataset - camera segment",
                 "purpose": "test",
-                "source_type": 0,
-                "status": 1,
+                "source_type": 1,
+                "status": 2,
                 "datastream_count": 1,
                 "scene_count": 0,
                 "dataset_count": 0,
                 "items": [
                   {
-                    "item_type": 0,
+                    "item_type": 1,
                     "item_id": "33333333-3333-3333-3333-333333333331"
                   }
                 ]
@@ -75,11 +75,11 @@
               "data": {
                 "id": "${global.datasetId}",
                 "name": "E2E Dataset - camera segment",
-                "source_type": 0,
+                "source_type": 1,
                 "datastream_count": 1,
                 "items": [
                   {
-                    "item_type": 0,
+                    "item_type": 1,
                     "item_id": "33333333-3333-3333-3333-333333333331"
                   }
                 ]
@@ -97,7 +97,7 @@
               "success": true,
               "data": [
                 {
-                  "item_type": 0,
+                  "item_type": 1,
                   "item_id": "33333333-3333-3333-3333-333333333331"
                 }
               ]
@@ -118,7 +118,7 @@
             "name": "E2E Dataset - external invalid",
             "description": "Invalid external dataset missing file path",
             "purpose": "test",
-            "source_type": 1,
+            "source_type": 2,
             "file_path": "",
             "file_format": "parquet"
           },

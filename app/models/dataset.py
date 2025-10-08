@@ -14,15 +14,15 @@ from app.models.base import BaseSQLModel
 
 
 class DatasetSourceType:
-    COMPOSED = 0        # Made of items (datastream/scene/dataset)
-    EXTERNAL_FILE = 1   # Prebuilt dataset file (pickle, parquet, etc.)
+    COMPOSED = 1        # Made of items (datastream/scene/dataset)
+    EXTERNAL_FILE = 2   # Prebuilt dataset file (pickle, parquet, etc.)
 
 
 class DatasetStatus:
-    CREATING = 0
-    READY = 1
-    PROCESSING = 2
-    FAILED = 3
+    CREATING = 1
+    READY = 2
+    PROCESSING = 3
+    FAILED = 4
 
 
 class DatasetModel(BaseSQLModel, table=True):

@@ -13,14 +13,15 @@ class DatasetItemKind:
     DATASET = 3
 
 class DatasetSourceKind:
-    COMPOSED = 0
-    EXTERNAL_FILE = 1
+    COMPOSED = 1
+    EXTERNAL_FILE = 2
+
 
 class DatasetStatusKind:
-    CREATING = 0
-    READY = 1
-    PROCESSING = 2
-    FAILED = 3
+    CREATING = 1
+    READY = 2
+    PROCESSING = 3
+    FAILED = 4
 
 
 class DatasetItem(BaseModel):
@@ -56,7 +57,7 @@ class DatasetBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = Field(None, max_length=2000)
     purpose: Optional[str] = Field(None, max_length=64, description="training/validation/test/production etc.")
-    source_type: int = Field(DatasetSourceKind.COMPOSED, ge=0, le=1)
+    source_type: int = Field(DatasetSourceKind.COMPOSED, ge=DatasetSourceKind.COMPOSED, le=DatasetSourceKind.EXTERNAL_FILE)
     file_path: Optional[str] = Field(None, description="S3 or local path (external file only)")
     file_format: Optional[str] = Field(None, description="pickle, parquet, tfrecord, etc.")
     algorithm_config: Optional[dict] = Field(None, description="JSON config for split ratios etc.")
@@ -79,7 +80,7 @@ class DatasetUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = Field(None, max_length=2000)
     purpose: Optional[str] = Field(None, max_length=64)
-    status: Optional[int] = Field(None, ge=0, le=3)
+    status: Optional[int] = Field(None, ge=DatasetStatusKind.CREATING, le=DatasetStatusKind.FAILED)
     algorithm_config: Optional[dict] = None
     file_path: Optional[str] = Field(None, description="Update external dataset path")
     file_format: Optional[str] = Field(None, description="Update dataset file format")
@@ -123,8 +124,12 @@ class DatasetDetail(DatasetListItem):
 class DatasetFilter(BaseModel):
     search: Optional[str] = None
     purpose: Optional[str] = None
-    status: Optional[int] = Field(None, ge=0, le=3)
-    source_type: Optional[int] = Field(None, ge=0, le=1)
+    status: Optional[int] = Field(None, ge=DatasetStatusKind.CREATING, le=DatasetStatusKind.FAILED)
+    source_type: Optional[int] = Field(
+        None,
+        ge=DatasetSourceKind.COMPOSED,
+        le=DatasetSourceKind.EXTERNAL_FILE,
+    )
     created_by: Optional[str] = None
     created_from: Optional[datetime] = None
     created_to: Optional[datetime] = None

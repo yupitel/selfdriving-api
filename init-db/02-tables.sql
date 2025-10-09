@@ -519,7 +519,7 @@ CREATE TABLE IF NOT EXISTS dataset (
     name VARCHAR(255) NOT NULL,
     description VARCHAR(2000),
     purpose VARCHAR(64),
-    status SMALLINT NOT NULL DEFAULT 1,
+    state SMALLINT NOT NULL DEFAULT 1,
     source_type SMALLINT NOT NULL DEFAULT 1,
     file_path VARCHAR(1024),
     file_format VARCHAR(64),
@@ -531,7 +531,31 @@ CREATE TABLE IF NOT EXISTS dataset (
 );
 
 CREATE INDEX IF NOT EXISTS idx_dataset_name ON dataset (name);
-CREATE INDEX IF NOT EXISTS idx_dataset_status ON dataset (status);
+CREATE INDEX IF NOT EXISTS idx_dataset_state ON dataset (state);
+
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'dataset' AND column_name = 'status'
+    ) THEN
+        ALTER TABLE dataset RENAME COLUMN status TO state;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'dataset' AND column_name = 'state'
+    ) THEN
+        ALTER TABLE dataset ADD COLUMN state SMALLINT NOT NULL DEFAULT 1;
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM pg_indexes
+        WHERE schemaname = current_schema() AND indexname = 'idx_dataset_status'
+    ) THEN
+        EXECUTE 'DROP INDEX IF EXISTS idx_dataset_status';
+    END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS dataset_member (
     id UUID PRIMARY KEY,

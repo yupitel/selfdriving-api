@@ -10,7 +10,7 @@ from sqlalchemy import func, and_, select
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from sqlmodel import Session
 
-from app.models.dataset import DatasetModel, DatasetMemberModel, DatasetSourceType, DatasetStatus
+from app.models.dataset import DatasetModel, DatasetMemberModel, DatasetSourceType, DatasetState
 from app.models.datastream import DataStreamModel
 from app.models.scene import SceneDataModel
 from app.utils.datetime import ensure_utc
@@ -168,7 +168,7 @@ class DatasetService:
             file_format=payload.file_format,
             created_by=payload.created_by,
             algorithm_config=payload.algorithm_config,
-            status=DatasetStatus.CREATING if payload.source_type == DatasetSourceType.COMPOSED else DatasetStatus.READY,
+            state=DatasetState.CREATING if payload.source_type == DatasetSourceType.COMPOSED else DatasetState.READY,
         )
 
         try:
@@ -192,7 +192,7 @@ class DatasetService:
                             )
                         self.session.flush()
                     self._touch_counts(dataset.id)
-                    dataset.status = DatasetStatus.READY
+                    dataset.state = DatasetState.READY
                     self.session.add(dataset)
 
             self.session.refresh(dataset)
@@ -243,8 +243,8 @@ class DatasetService:
                 conditions.append(DatasetModel.name.ilike(f"%{term}%"))
         if filters.purpose:
             conditions.append(DatasetModel.purpose == filters.purpose)
-        if filters.status is not None:
-            conditions.append(DatasetModel.status == filters.status)
+        if filters.state is not None:
+            conditions.append(DatasetModel.state == filters.state)
         if filters.source_type is not None:
             conditions.append(DatasetModel.source_type == filters.source_type)
         if filters.created_by:
@@ -310,8 +310,8 @@ class DatasetService:
                     dataset.description = payload.description
                 if payload.purpose is not None:
                     dataset.purpose = payload.purpose
-                if payload.status is not None:
-                    dataset.status = payload.status
+                if payload.state is not None:
+                    dataset.state = payload.state
                 if payload.algorithm_config is not None:
                     dataset.algorithm_config = payload.algorithm_config
                 if payload.file_path is not None:

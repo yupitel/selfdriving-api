@@ -38,16 +38,23 @@ async def list_datasets(
     offset: int = Query(0, ge=0, description="Number of results to skip"),
     search: Optional[str] = None,
     purpose: Optional[str] = None,
-    status_: Optional[int] = Query(None, alias="status"),
+    state: Optional[int] = Query(None, alias="state"),
+    status_legacy: Optional[int] = Query(
+        None,
+        alias="status",
+        description="Deprecated: use state",
+    ),
     source_type: Optional[int] = None,
     created_by: Optional[str] = None,
     session: Session = Depends(get_session)
 ):
     try:
+        resolved_state = state if state is not None else status_legacy
+
         filters = DatasetFilter(
             search=search,
             purpose=purpose,
-            status=status_,
+            state=resolved_state,
             source_type=source_type,
             created_by=created_by,
             offset=offset,
@@ -97,18 +104,25 @@ async def list_datasets(
 async def count_datasets(
     search: Optional[str] = None,
     purpose: Optional[str] = None,
-    status_: Optional[int] = Query(None, alias="status"),
+    state: Optional[int] = Query(None, alias="state"),
+    status_legacy: Optional[int] = Query(
+        None,
+        alias="status",
+        description="Deprecated: use state",
+    ),
     source_type: Optional[int] = None,
     created_by: Optional[str] = None,
     session: Session = Depends(get_session)
 ):
     try:
+        resolved_state = state if state is not None else status_legacy
+
         filters = DatasetFilter(
             offset=0,
             limit=1,
             search=search,
             purpose=purpose,
-            status=status_,
+            state=resolved_state,
             source_type=source_type,
             created_by=created_by,
         )

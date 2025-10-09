@@ -18,7 +18,7 @@ class DatasetSourceType:
     EXTERNAL_FILE = 2   # Prebuilt dataset file (pickle, parquet, etc.)
 
 
-class DatasetStatus:
+class DatasetState:
     CREATING = 1
     READY = 2
     PROCESSING = 3
@@ -36,8 +36,8 @@ class DatasetModel(BaseSQLModel, table=True):
     # Business classification (training/validation/test/production, etc.)
     purpose: Optional[str] = Field(default=None, sa_column=Column(String(64), nullable=True))
 
-    # Status and source
-    status: int = Field(default=DatasetStatus.CREATING, sa_column=Column(SmallInteger, nullable=False, index=True))
+    # State and source
+    state: int = Field(default=DatasetState.CREATING, sa_column=Column(SmallInteger, nullable=False, index=True))
     source_type: int = Field(default=DatasetSourceType.COMPOSED, sa_column=Column(SmallInteger, nullable=False))
 
     # For EXTERNAL_FILE source

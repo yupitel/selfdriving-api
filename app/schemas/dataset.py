@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import List, Optional, Literal
 import json
 from uuid import UUID
-from pydantic import BaseModel, Field, ConfigDict, field_validator
+from pydantic import BaseModel, Field, ConfigDict, field_validator, AliasChoices
 
 class DatasetItemKind:
     DATASTREAM = 1
@@ -17,7 +17,7 @@ class DatasetSourceKind:
     EXTERNAL_FILE = 2
 
 
-class DatasetStatusKind:
+class DatasetStateKind:
     CREATING = 1
     READY = 2
     PROCESSING = 3
@@ -80,7 +80,13 @@ class DatasetUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = Field(None, max_length=2000)
     purpose: Optional[str] = Field(None, max_length=64)
-    status: Optional[int] = Field(None, ge=DatasetStatusKind.CREATING, le=DatasetStatusKind.FAILED)
+    state: Optional[int] = Field(
+        None,
+        ge=DatasetStateKind.CREATING,
+        le=DatasetStateKind.FAILED,
+        validation_alias=AliasChoices('state', 'status'),
+        serialization_alias='state',
+    )
     algorithm_config: Optional[dict] = None
     file_path: Optional[str] = Field(None, description="Update external dataset path")
     file_format: Optional[str] = Field(None, description="Update dataset file format")
@@ -103,7 +109,13 @@ class DatasetListItem(BaseModel):
     name: str
     description: Optional[str] = None
     purpose: Optional[str] = None
-    status: int
+    state: int = Field(
+        ...,
+        ge=DatasetStateKind.CREATING,
+        le=DatasetStateKind.FAILED,
+        validation_alias=AliasChoices('state', 'status'),
+        serialization_alias='state',
+    )
     source_type: int
     file_path: Optional[str] = None
     file_format: Optional[str] = None
@@ -124,7 +136,13 @@ class DatasetDetail(DatasetListItem):
 class DatasetFilter(BaseModel):
     search: Optional[str] = None
     purpose: Optional[str] = None
-    status: Optional[int] = Field(None, ge=DatasetStatusKind.CREATING, le=DatasetStatusKind.FAILED)
+    state: Optional[int] = Field(
+        None,
+        ge=DatasetStateKind.CREATING,
+        le=DatasetStateKind.FAILED,
+        validation_alias=AliasChoices('state', 'status'),
+        serialization_alias='state',
+    )
     source_type: Optional[int] = Field(
         None,
         ge=DatasetSourceKind.COMPOSED,
